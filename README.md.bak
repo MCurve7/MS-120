@@ -1,5 +1,4 @@
-**Note:** Due to some updates to some packages I am having to update JSUMS120.jl 
-and may not work correctly depending on what version of the required packages are being used.
+Fall 2024 we will be using the Dash version of this.
 
 The JSUMS120.jl file is my frontend to the SymPy.jl package.
 It is intended to make it easier for my Applied Calculus students to learn calculus. 
@@ -20,3 +19,6 @@ The codeblock of html is not necesary,
 but makes the notebook look better (in my opinion).
 
 The file Test_MS200_Pluto.jl runs all the commands in the JSUMS120.jl file to test if it is working correctly.
+
+**Note:** Due to some updates to some packages I am having to update JSUMS120.jl 
+and may not work correctly depending on what version of the required packages are being used.

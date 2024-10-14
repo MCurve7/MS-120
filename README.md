@@ -1,4 +1,4 @@
-Fall 2024 we will be using the Dash version of this.
+Fall 2024 we will be using the Dash version of JSUMS120.
 
 The JSUMS120.jl file is my frontend to the SymPy.jl package.
 It is intended to make it easier for my Applied Calculus students to learn calculus. 
