@@ -239,10 +239,17 @@ function criticalpoints(f)
 	# crpt_num = solve(f(x))
 	# crpt_den = solve(simplify(1/f(x)))
 	crpt_num = solve(f)
+	# println("crpt_num: $crpt_num")
 	crpt_den = solve(simplify(1/f)) #without simplify results in failure
+	# println("crpt_den: $crpt_den")
 
+	# for z in N.(crpt_num)
+	# 	println("z = $z, real(z) = $(real(z))")
+	# end
 	crpt_num = [real(z) for z in N.(crpt_num)] # Get rid of complex (looking) solutions
+	filter!(e->!isa(e, Bool),crpt_num) # Was getting booleans and this removes them
 	crpt_den = [real(z) for z in N.(crpt_den)] # Get rid of complex (looking) solutions
+	filter!(e->!isa(e, Bool),crpt_den)
 
 	# to make sure zeros and undefined remain type Real:
 	for x in crpt_num
