@@ -797,6 +797,7 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
 	p = yaxis!(label, yguidefontsize=18)
     #Draw vertical asymptotes if they exist
     asymptote_vert = solve(simplify(1/f))
+	filter!(e->isa(e, Real),asymptote_vert) # Was getting complex values and this removes them
     if length(asymptote_vert) != 0
         p = vline!(asymptote_vert, line = :dash)
     end
