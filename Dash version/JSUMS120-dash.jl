@@ -18,7 +18,7 @@ using LaTeXStrings
 
 begin
 	x = Sym("x")
-	# y = Sym("y")
+	y = symbols("y", real = true) #Need for f = abs
 	# x = symbols("x", real = true)
 	h = Sym("h")
 	C = Sym("C")
@@ -233,22 +233,37 @@ Find the critical points of the function f(x).
 Returns a pair of vectors with the first vector the values that make ``f(x) = 0`` and the second vector the values that make ``f(x)`` undefined.
 """
 function criticalpoints(f)
+	# println("Calling criticalpoints")
+	# Need to fix for abs(x)
 	zeros = Real[]
 	undefined = Real[]
 
+	# println("f = ?, f = $f")
+	if f == abs(x)
+		f = abs(y)
+	end
 	# crpt_num = solve(f(x))
 	# crpt_den = solve(simplify(1/f(x)))
-	crpt_num = solve(f)
+	crpt_num = solve(f, check=false)
 	# println("crpt_num: $crpt_num")
-	crpt_den = solve(simplify(1/f)) #without simplify results in failure
+	
+	# crpt_den = solve(simplify(1/f), check=false) #without simplify results in failure
+	crpt_den = solve(1/f, check=false) #without simplify results in failure
+	
 	# println("crpt_den: $crpt_den")
+	crpt_hole = intersect(crpt_num, crpt_den)
+	crpt_num = setdiff(crpt_num, crpt_hole)
+
+	# println("crpt_num = $crpt_num, crpt_den = $crpt_den, crpt_hole = $crpt_hole")
 
 	# for z in N.(crpt_num)
 	# 	println("z = $z, real(z) = $(real(z))")
 	# end
 	crpt_num = [real(z) for z in N.(crpt_num)] # Get rid of complex (looking) solutions
+	# println("crpt_num = $crpt_num")
 	filter!(e->!isa(e, Bool),crpt_num) # Was getting booleans and this removes them
-	crpt_den = [real(z) for z in N.(crpt_den)] # Get rid of complex (looking) solutions
+	crpt_den = [real(z) for z in N.(crpt_den) if imag(z) == 0] # Get rid of complex (looking) solutions. Added if statement since some complex were comverting to 0.0 and sneaking through
+	# println("crpt_den = $crpt_den\n")
 	filter!(e->!isa(e, Bool),crpt_den)
 
 	# to make sure zeros and undefined remain type Real:
@@ -636,6 +651,7 @@ function signchart(f; label="", domain = "(-∞, ∞)", horiz_jog = 0.2, size=(1
 		crpt = sort(vcat(crpt_num, crpt_den)) #put them into a list and sort
 		crpt = [real(z) for z in N.(crpt)] # Get rid of complex (looking) solutions
 		crpt = convert.(Float64, crpt) #convert to floats
+		# println("crpt = $crpt")
 
 		#If there are no crpts just plot the sign of the function at 0
 		if length(crpt) == 0
@@ -646,6 +662,7 @@ function signchart(f; label="", domain = "(-∞, ∞)", horiz_jog = 0.2, size=(1
 		else
 			test_pts, signs = getsigns(f, crpt, domain = domain, xrange = xrange)
 		end
+		# println("test_pts = $test_pts, signs = $signs")
 
 		y = zeros(length(test_pts)) #make array of zeros of length of test_pts
 		gr()
@@ -702,11 +719,14 @@ function signcharts(f; labels="y",  domain = "(-∞, ∞)", horiz_jog = 0.2, siz
 	# println("f′ = $(f′), typeof: $(typeof(f′))")
 	# println("f′′ = $(f′′), typeof: $(typeof(f′′))")
 		
-	if N(f′.is_constant())
+	f′_is_constant = isa(f′.is_constant(), Sym{Nothing}) ? false : f′.is_constant() # had to catch the None boolean type from sympy
+	# if N(f′.is_constant())
+	if N(f′_is_constant)
 		f′ = convert(Real, f′)
 		f′′ = 0.0
 	elseif N(f′′.is_constant())
-		f′′ = convert(Real, f′′)
+		# f′′ = convert(Real, f′′)
+		f′′ = convert(Real, simplify(f′′)) # had to simplify the expression to convert it
 	end
 	
 	f_sc = signchart(f; label = labels[1], domain = domain, horiz_jog = horiz_jog, size = size, dotverticaljog = dotverticaljog, marksize = marksize, tickfontsize = tickfontsize, imageFormat = imageFormat, xrange=xrange)
@@ -772,6 +792,8 @@ marksize: \n
 """
 function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
     #imageFormat can be :svg, :png, ... MAKE save image option for pdf and ps?
+	# Need to add holes since I can now find them
+
     #p = plot(values, f, legend = :outertopright, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat)
 	interval = convert_to_interval(domain)
 	# if xrange is bigger than the domain reset to the size of the domain
@@ -942,7 +964,11 @@ function extrema(f::T; domain::String = "(-∞, ∞)")  where {T <: Union{Functi
     f′′ = diff(f′)
 
 	# find critical points
-    crpt_num, crpt_den = criticalpoints(f′(x))
+	if f′.is_number
+		crpt_num, crpt_den = criticalpoints(f′) # added since it was missing when f′ was constant
+	else
+    	crpt_num, crpt_den = criticalpoints(f′(x))
+	end
 
 	# use the 2nd derivative test to find max/mins
     second_derivative_at_crpt = []
@@ -1030,7 +1056,7 @@ function inflection_points(f::Union{Function, Sym}; domain::String = "(-∞, ∞
 	# crpt_num, crpt_den = criticalpoints(f′′)
 	crpt_num, _ = criticalpoints(f′′)
 	crpt_num = unique(crpt_num)
-println("crpt_num = $crpt_num")
+# println("crpt_num = $crpt_num")
 	for a in crpt_num
 		if a > interval.left && a < interval.right
 			if f′′′ ≠ 0
@@ -1189,12 +1215,18 @@ xrange: ?
 """
 function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", dotverticaljog=0, marksize=8, tickfontsize = 20, digits= 2, horiz_jog = 0.2, size=(1000, 400), imageFormat = :svg, xrange = missing) where {T <: Union{Function, Sym}}
     #Need to adjust values based on domain
+	# Fix for abs(x), exp(x), exp(x^2)
+
+	if f == abs(x)
+		f = abs(y)
+	end
+
     gr()
     interval = convert_to_interval(domain)
 	if isa(interval, OpenOpenInterval)
 		if interval.left < 0.0 < interval.right
 			# println("OpenOpenInterval, $(interval.left) < 0.0 < $(interval.right); $(interval.left < 0.0), $(0.0 < interval.right)")
-			y_intercept = (0, f.subs(x, 0))
+			y_intercept = x in f.free_symbols ? (0, f.subs(x, 0)) : (0, f.subs(y, 0))
 			y_intercept = round.(convert.(Float64, y_intercept), digits = digits)
 		else
 			# println("OpenOpenInterval, missing, $(interval.left) < 0.0 < $(interval.right); $(interval.left < 0.0), $(0.0 < interval.right)")
@@ -1203,7 +1235,7 @@ function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", do
 	elseif isa(interval, OpenClosedInterval)
 		# println("OpenClosedInterval, $(interval.left) < 0.0 < $(interval.right)")
 		if interval.left < 0.0 <= interval.right
-			y_intercept = (0, f.subs(x, 0))
+			y_intercept = x in f.free_symbols ? (0, f.subs(x, 0)) : (0, f.subs(y, 0))
 			y_intercept = round.(convert.(Float64, y_intercept), digits = digits)
 		else
 			println("OpenClosedInterval, missing")
@@ -1212,7 +1244,7 @@ function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", do
 	elseif isa(interval, ClosedOpenInterval)
 		# println("ClosedOpenInterval, $(interval.left) < 0.0 < $(interval.right)")
 		if interval.left <= 0.0 < interval.right
-			y_intercept = (0, f.subs(x, 0))
+			y_intercept = x in f.free_symbols ? (0, f.subs(x, 0)) : (0, f.subs(y, 0))
 			y_intercept = round.(convert.(Float64, y_intercept), digits = digits)
 		else
 			println("ClosedOpenInterval, missing")
@@ -1221,7 +1253,7 @@ function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", do
 	else
 		if interval.left <= 0.0 <= interval.right
 			# println("ClosedClosedInterval, $(interval.left) < 0.0 < $(interval.right)")
-			y_intercept = (0, f.subs(x, 0))
+			y_intercept = x in f.free_symbols ? (0, f.subs(x, 0)) : (0, f.subs(y, 0))
 			y_intercept = round.(convert.(Float64, y_intercept), digits = digits)
 		else
 			println("ClosedClosedInterval, missing")
@@ -1242,6 +1274,7 @@ function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", do
 	
     infpt = inflection_points(f; domain)
 	infpt = [simplify.(x) for x in infpt]
+	infpt = convert.(Tuple{Float64, Float64}, infpt)
 	# infpt = [round.(pt, digits = digits) for pt in infpt if !ismissing(pt[2])]
 	for (i, pt) in enumerate(infpt)
 		if isa(pt[1], Float64)
