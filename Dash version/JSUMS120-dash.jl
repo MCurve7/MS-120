@@ -234,6 +234,7 @@ Returns a pair of vectors with the first vector the values that make ``f(x) = 0`
 """
 function criticalpoints(f)
 	# println("Calling criticalpoints")
+	# println("f = $f")
 	# Need to fix for abs(x)
 	zeros = Real[]
 	undefined = Real[]
@@ -244,13 +245,15 @@ function criticalpoints(f)
 	end
 	# crpt_num = solve(f(x))
 	# crpt_den = solve(simplify(1/f(x)))
+
 	crpt_num = solve(f, check=false)
 	# println("crpt_num: $crpt_num")
 	
 	# crpt_den = solve(simplify(1/f), check=false) #without simplify results in failure
 	crpt_den = solve(1/f, check=false) #without simplify results in failure
+	filter!(e->e=="zoo", crpt_num)
 	
-	# println("crpt_den: $crpt_den")
+	# println("crpt_num = $crpt_num; crpt_den: $crpt_den")
 	crpt_hole = intersect(crpt_num, crpt_den)
 	crpt_num = setdiff(crpt_num, crpt_hole)
 
@@ -274,7 +277,9 @@ function criticalpoints(f)
 		append!(undefined, x)
 	end
 
-	(zeros = zeros, undefined = undefined)
+	# println("crpt_hole = $crpt_hole")
+
+	(zeros = zeros, undefined = undefined, holes = crpt_hole)
 end
 
 """
@@ -285,7 +290,7 @@ Find the critical points for the constant function f(x).
 Returns the pair of vectors ([], []).
 """
 function criticalpoints(a::T) where {T <: Real}
-	(zeros = Real[], undefined = Real[])
+	(zeros = Real[], undefined = Real[], holes = Real[])
 end
 
 # criticalpoints(c(x))
@@ -647,7 +652,7 @@ function signchart(f; label="", domain = "(-∞, ∞)", horiz_jog = 0.2, size=(1
 		a = convert(Real, f)
 		p = signchart(a; label=label, domain = domain, horiz_jog = horiz_jog, size=size, dotverticaljog = dotverticaljog, marksize = marksize, tickfontsize = tickfontsize, imageFormat = imageFormat, xrange = xrange)
 	else
-		crpt_num, crpt_den = criticalpoints(f) #get the critical pts
+		crpt_num, crpt_den, crpt_hole = criticalpoints(f) #get the critical pts
 		crpt = sort(vcat(crpt_num, crpt_den)) #put them into a list and sort
 		crpt = [real(z) for z in N.(crpt)] # Get rid of complex (looking) solutions
 		crpt = convert.(Float64, crpt) #convert to floats
@@ -792,17 +797,22 @@ marksize: \n
 """
 function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
     #imageFormat can be :svg, :png, ... MAKE save image option for pdf and ps?
-	# Need to add holes since I can now find them
+	# Need to check if any holes coincide with the ends of the domain and adjust graph if necessary e.g. hole at x = 2 and domain = [2, 5] needs open dot
+	# Having problems when hole and domain endpoint coinciding.
+
+	crpt_num, crpt_denom, crpt_hole = criticalpoints(f)
 
     #p = plot(values, f, legend = :outertopright, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat)
 	interval = convert_to_interval(domain)
 	# if xrange is bigger than the domain reset to the size of the domain
 	xrange_left, xrange_right = xrange
 	
+	#Have the xrange agree with the domain when the domain is smaller
 	xrange_left = xrange[1] < interval.left ? interval.left : xrange[1]
 	xrange_right = interval.right < xrange[2] ? interval.right : xrange[2]
 	xrange = (xrange_left, xrange_right)
 	
+	# Set the values to evaluate the function at.
 	values = xrange[1]:xsteps:xrange[2]
 	if ismissing(horiz_ticks)
 		horiz_ticks = xrange[1]:xrange[2]
@@ -854,6 +864,17 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
         p = hline!([rt_lim],  line = :dash)
     end
 	
+	#Draw any holes that exists
+	if !isempty(crpt_hole)
+		y_holes = []
+		for c in crpt_hole
+			if xrange[1] < c < xrange[2]
+				push!(y_holes, lim(f, x, c))
+			end
+		end
+		p = Plots.plot!(crpt_hole, y_holes, seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+	end
+
 	# if either end of the domain is finite ifnd the end point and plot it.
 	left_endpoint_value = missing
 	right_endpoint_value = missing
@@ -965,9 +986,9 @@ function extrema(f::T; domain::String = "(-∞, ∞)")  where {T <: Union{Functi
 
 	# find critical points
 	if f′.is_number
-		crpt_num, crpt_den = criticalpoints(f′) # added since it was missing when f′ was constant
+		crpt_num, crpt_den, crpt_hole = criticalpoints(f′) # added since it was missing when f′ was constant
 	else
-    	crpt_num, crpt_den = criticalpoints(f′(x))
+    	crpt_num, crpt_den, crpt_hole = criticalpoints(f′(x))
 	end
 
 	# use the 2nd derivative test to find max/mins
@@ -983,7 +1004,7 @@ function extrema(f::T; domain::String = "(-∞, ∞)")  where {T <: Union{Functi
     max = NTuple{2, Real}[]
     min = NTuple{2, Real}[]
     # assuming the derivative is not = 0 at the endpoints, can add code later
-	# if the left endpoint a point where f is undefined and also isn't -∞ and not open
+	# if the left endpoint is a point where f isn't undefined and also isn't -∞ and not open
 	if interval.left ∉ crpt_den && interval.left ≠ -∞ && !ismissing(left_end)
 		# if the slope at the left endpoint is positive then it's a min
 		if f′(interval.left) > 0
@@ -1054,7 +1075,7 @@ function inflection_points(f::Union{Function, Sym}; domain::String = "(-∞, ∞
 	f′′ = diff(f′)
 	f′′′ = diff(f′′)
 	# crpt_num, crpt_den = criticalpoints(f′′)
-	crpt_num, _ = criticalpoints(f′′)
+	crpt_num, _, _ = criticalpoints(f′′)
 	crpt_num = unique(crpt_num)
 # println("crpt_num = $crpt_num")
 	for a in crpt_num
@@ -1215,7 +1236,9 @@ xrange: ?
 """
 function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", dotverticaljog=0, marksize=8, tickfontsize = 20, digits= 2, horiz_jog = 0.2, size=(1000, 400), imageFormat = :svg, xrange = missing) where {T <: Union{Function, Sym}}
     #Need to adjust values based on domain
-	# Fix for abs(x), exp(x), exp(x^2)
+	# Fix for abs(x), exp(x^2)
+	
+	_, _, crpt_hole = criticalpoints(f)
 
 	if f == abs(x)
 		f = abs(y)
@@ -1292,12 +1315,26 @@ function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", do
 
     left_end, right_end = end_behavior(f, interval)
 	# println("left_end = $left_end, right_end = $right_end")
+
+	# new lines ###################################
+	
+	#Draw any holes that exists
+	f_holes = []
+	if !isempty(crpt_hole)		
+		for c in crpt_hole
+			# if xrange[1] < c < xrange[2]
+				push!(f_holes, (c, lim(f, x, c)))
+			# end
+		end
+	end
+	###############################################
 	
 	(
 		y_intercept = y_intercept, 
 		max = length(f_max) == 0 ? [] : f_max, 
 		min = length(f_min) == 0 ? [] : f_min, 
 		inflection = isempty(infpt) ? [] : infpt,
+		holes = isempty(f_holes) ? [] : f_holes, # new line
 		# inflection = length(infpt) == 0 ? [] : infpt,
 		left_behavior = left_end, 
 		right_behavior = right_end, 

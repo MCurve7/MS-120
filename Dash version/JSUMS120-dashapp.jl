@@ -4,10 +4,6 @@
 # import Pkg; Pkg.add("Formatting")
 # import Pkg; Pkg.add("LaTeXStrings")
 
-########################################
-# working on lines ≈ 246-254
-########################################
-
 using Dash, DashBootstrapComponents, Base64
 using Revise
 includet("JSUMS120-dash.jl")
@@ -600,7 +596,7 @@ begin
                 domain: an interval whritten as a string, e.g. "(-∞, 10]". It overrides xrange.\n
                 horiz_ticks: a range giving the horizontal ticks to be displayed\n
                 vert_ticks: a range giving the horizontal ticks to be displayed\n
-                yrange: a pair giving the ``y`` limits of the plot\n
+                yrange: a pair giving the ``y`` limits of the plot (no paraenthesis)\n
                 xsteps: the step size for the ``x`` values (`xrange[1]:xsteps:xrange[2]`). Defaults to 0.01.\n
                 size: size of the graph as an ordered pair. Defaults to (1000, 500)\n
                 imageFormat: Only :svg and :png have any effect for now. Choices are :pdf, :png, :ps, :svg.\n
@@ -682,34 +678,62 @@ begin
                 ("Please enter the limit value. E.g. 2", true, "")
             else
                 fcn = replace(fcn, "^" => "**")
-                if lim_value == "oo"
-                    val = ∞
-                elseif lim_value == "-oo"
-                    val = -∞
-                elseif lim_value == "pi" || lim_value == "π"
-                    val = π
-                elseif lim_value == "e" || lim_value == "E"
-                    val = ℯ
-                else
-                    val = parse(Float64, lim_value)
+
+                # catch errors in the function
+                valid_expression = true
+                error_msg = ""
+                try
+                    sympy.parse_expr(fcn)
+                catch e 
+                    valid_expression = false
+                    error_msg = e
                 end
-                if limit_type == "limittable"
-                    m = match(fcn_re, fcn)
-                    # println("m = $m")
-                    if !isnothing(m)
-                        # fcn = m[1]
-                        fcn = "$(m[1])(x)+0"
-                        # println("fcn = $fcn")
-                    end
-                    if lim_value == "oo" || lim_value == "-oo"
-                        return ("", false, limittable(sympy.parse_expr(fcn), val; rows = num_rows, format = format))
+
+                if valid_expression
+                    if lim_value == "oo"
+                        val = ∞
+                    elseif lim_value == "-oo"
+                        val = -∞
+                    elseif lim_value == "pi" || lim_value == "π"
+                        val = π
+                    elseif lim_value == "e" || lim_value == "E"
+                        val = ℯ
                     else
-                        return ("", false, limittable(sympy.parse_expr(fcn), val; rows = num_rows, dir = lim_dir, format = format))
+                        val = parse(Float64, lim_value)
+                    end
+                    if limit_type == "limittable"
+                        m = match(fcn_re, fcn)
+                        # println("m = $m")
+                        if !isnothing(m)
+                            # fcn = m[1]
+                            fcn = "$(m[1])(x)+0"
+                            # println("fcn = $fcn")
+                        end
+                        if lim_value == "oo" || lim_value == "-oo"
+                            return ("", false, limittable(sympy.parse_expr(fcn), val; rows = num_rows, format = format))
+                        else
+                            return ("", false, limittable(sympy.parse_expr(fcn), val; rows = num_rows, dir = lim_dir, format = format))
+                        end
+                    else
+                        limit_result = lim(sympy.parse_expr(fcn), limit_var, val; dir = lim_dir)
+                        # println("limit_result = $limit_result")
+                        if ismissing(limit_result)
+                            ("", false, dcc_markdown("""\$\\displaystyle{\\lim_{x \\to """*(string(val))*"""}} f(x) = DNE\$""", mathjax  = true))
+                        elseif limit_result == "-oo" # not sure why it's not matching
+                            # println("Seeing -oo")
+                            ("", false, dcc_markdown("""\$\\displaystyle{\\lim_{x \\to """*(string(val))*"""}} f(x) = -oo\$""", mathjax  = true))
+                        elseif limit_result == "oo" # not sure why it's not matching
+                            # println("Seeing oo")
+                            ("", false, dcc_markdown("""\$\\displaystyle{\\lim_{x \\to """*(string(val))*"""}} f(x) = oo\$""", mathjax  = true))
+                        else
+                            # println("Not seeing +/-oo")
+                            ("", false, dcc_markdown("""\$\\displaystyle{\\lim_{x \\to """*(string(val))*"""}} f(x) = """*(Printf.format(Printf.Format(format), limit_result))*"""\$""", mathjax  = true))
+                            # ("", false, dcc_markdown("""\$\\displaystyle{\\lim_{x \\to """*(string(val))*"""}} f(x) = """*(string(limit_result))*"""\$""", mathjax  = true))
+                        end
+                        
                     end
                 else
-                    limit_result = lim(sympy.parse_expr(fcn), limit_var, val; dir = lim_dir)  
-                    ("", false, dcc_markdown("""\$\\displaystyle{\\lim_{x \\to """*(string(val))*"""}} f(x) = """*(Printf.format(Printf.Format(format), limit_result))*"""\$""", mathjax  = true))
-                    # ("", false, dcc_markdown("""\$\\displaystyle{\\lim_{x \\to """*(string(val))*"""}} f(x) = """*(string(limit_result))*"""\$""", mathjax  = true))
+                    ("Invalid function syntax. $error_msg", true, "")
                 end
             end
         end
@@ -758,18 +782,32 @@ begin
                 ("Please enter the domian. E.g. [-oo, 5)", true, "")
             else
                 fcn = replace(fcn, "^" => "**")
-                size = (size_horizontal, size_vertical)
-                imageFormat_symbol = Symbol(imageFormat)
-                xrange = xrange == "missing" ? missing : xrange
-                if howmany == "single"
-                    p = signchart(sympy.parse_expr(fcn); label, domain, horiz_jog, size, dotverticaljog, marksize, tickfontsize, imageFormat = imageFormat_symbol, xrange)
-                    figname = "./assets/signchart."*imageFormat
-                else
-                    p = signcharts(sympy.parse_expr(fcn); labels = label, domain, horiz_jog, size, dotverticaljog, marksize, tickfontsize, imageFormat = imageFormat_symbol, xrange)
-                    figname = "./assets/signcharts."*imageFormat
+                # catch errors in the function
+                valid_expression = true
+                error_msg = ""
+                try
+                    sympy.parse_expr(fcn)
+                catch e 
+                    valid_expression = false
+                    error_msg = e
                 end
-                savefig(p, figname)
-                return ("", false, html_img(src = "data:image/$imageFormat;base64,$(open(base64encode, figname))"))
+
+                if valid_expression
+                    size = (size_horizontal, size_vertical)
+                    imageFormat_symbol = Symbol(imageFormat)
+                    xrange = xrange == "missing" ? missing : xrange
+                    if howmany == "single"
+                        p = signchart(sympy.parse_expr(fcn); label, domain, horiz_jog, size, dotverticaljog, marksize, tickfontsize, imageFormat = imageFormat_symbol, xrange)
+                        figname = "./assets/signchart."*imageFormat
+                    else
+                        p = signcharts(sympy.parse_expr(fcn); labels = label, domain, horiz_jog, size, dotverticaljog, marksize, tickfontsize, imageFormat = imageFormat_symbol, xrange)
+                        figname = "./assets/signcharts."*imageFormat
+                    end
+                    savefig(p, figname)
+                    return ("", false, html_img(src = "data:image/$imageFormat;base64,$(open(base64encode, figname))"))
+                else
+                    ("Invalid function syntax. $error_msg", true, "")
+                end
             end
         end
     end
@@ -807,26 +845,41 @@ begin
                 ("Please enter an endpoint. E.g. 3", true, "")
             else
                 fcn = replace(fcn, "^" => "**")
-                # xrange = (parse(Float64, left_endpt), parse(Float64, right_endpt))
-                xrange = (left_endpt, right_endpt)
-                # size = (parse(Int64, size_horizontal), parse(Int64, size_vertical))
-                size = (size_horizontal, size_vertical)
-                horiz_ticks = missing #horiz_ticks... split and reform? Eg 0:0.1:3
-                vert_ticks = missing #vert_ticks... split and reform? Eg 0:0.1:3
-                if yrange != "missing"
-                    ymin, ymax = split(yrange, ",")
-                    yrange = (parse(Float64, ymin), parse(Float64, ymax))
-                else
-                    yrange = missing #yrange is a pair so split and reform
+
+                # catch errors in the function
+                valid_expression = true
+                error_msg = ""
+                try
+                    sympy.parse_expr(fcn)
+                catch e 
+                    valid_expression = false
+                    error_msg = e
                 end
-                # xsteps = parse(Float64, xsteps)
-                # tickfontsize = parse(Int64, tickfontsize)
-                # marksize = parse(Int64, marksize)
-                imageFormat_symbol = Symbol(imageFormat)
-                p = functionplot(sympy.parse_expr(fcn), xrange; label, domain, horiz_ticks, vert_ticks, yrange, xsteps, size, imageFormat = imageFormat_symbol, tickfontsize, marksize)
-                figname = "./assets/functionplot."*imageFormat
-                savefig(p, figname)
-                return ("", false, html_img(src = "data:image/$imageFormat;base64,$(open(base64encode, figname))"))
+
+                if valid_expression
+                    # xrange = (parse(Float64, left_endpt), parse(Float64, right_endpt))
+                    xrange = (left_endpt, right_endpt)
+                    # size = (parse(Int64, size_horizontal), parse(Int64, size_vertical))
+                    size = (size_horizontal, size_vertical)
+                    horiz_ticks = missing #horiz_ticks... split and reform? Eg 0:0.1:3
+                    vert_ticks = missing #vert_ticks... split and reform? Eg 0:0.1:3
+                    if yrange != "missing"
+                        ymin, ymax = split(yrange, ",")
+                        yrange = (parse(Float64, ymin), parse(Float64, ymax))
+                    else
+                        yrange = missing #yrange is a pair so split and reform
+                    end
+                    # xsteps = parse(Float64, xsteps)
+                    # tickfontsize = parse(Int64, tickfontsize)
+                    # marksize = parse(Int64, marksize)
+                    imageFormat_symbol = Symbol(imageFormat)
+                    p = functionplot(sympy.parse_expr(fcn), xrange; label, domain, horiz_ticks, vert_ticks, yrange, xsteps, size, imageFormat = imageFormat_symbol, tickfontsize, marksize)
+                    figname = "./assets/functionplot."*imageFormat
+                    savefig(p, figname)
+                    return ("", false, html_img(src = "data:image/$imageFormat;base64,$(open(base64encode, figname))"))
+                else
+                    ("Invalid function syntax. $error_msg", true, "")
+                end
             end
         end
     end
@@ -862,50 +915,67 @@ begin
                 ("Please enter the domian. E.g. [-oo, 5)", true, "", "")
             else
                 fcn = replace(fcn, "^" => "**")
-                labels = isempty(labels) ? "y" : labels
-                # xrange = (parse(Int64, left_endpt),parse(Int64, right_endpt))
-                # dotverticaljog = parse(Int64, dotverticaljog)
-                # marksize = parse(Int64, marksize)
-                # tickfontsize = parse(Int64, tickfontsize)
-                # digits = parse(Int64, digits)
-                # horiz_jog = parse(Float64, horiz_jog)
-                size = (size_horizontal, size_vertical)
-                # size = (parse(Int64, size_horizontal), parse(Int64, size_vertical))
-                imageFormat_symbol = Symbol(imageFormat)
-                summary = function_summary(sympy.parse_expr(fcn); domain, labels, dotverticaljog, marksize, tickfontsize, digits, horiz_jog, size, imageFormat = imageFormat_symbol, xrange = missing)
-                figname = "./assets/summarysignchart."*imageFormat
-                savefig(summary.signcharts, figname)
-                # println(summary)
-                # summary_md = """
-                # | Property | Value(s) |
-                # | -------- | ---------|
-                # | *y*-intercept | $(summary.y_intercept) |
-                # | Local Maxiumum | $(summary.max[1]) |
-                # | Local Minimum | $(summary.min[1]) |
-                # | Inflection point(s) | $(summary.inflection[1]) |
-                # | Left behavior | $(summary.left_behavior) |
-                # | Right behavior | $(summary.right_behavior) |
-                # """
-                summary_max = isempty(summary.max) ? "None" : join(string.(summary.max), ", ")
-                summary_min = isempty(summary.min) ? "None" : join(string.(summary.min), ", ")
-                summary_inflection = isempty(summary.inflection) ? "None" : join(string.(summary.inflection), ", ")
-                summary_html = 
-                html_table([
-                    html_tr([html_td("y-intercept", style = Dict("border"=>"1px solid black")), html_td("$(summary.y_intercept)", style = Dict("border"=>"1px solid black"))]),
-                    html_tr([html_td("Local Maxiumum", style = Dict("border"=>"1px solid black")), html_td(summary_max, style = Dict("border"=>"1px solid black"))]),
-                    html_tr([html_td("Local Minimum", style = Dict("border"=>"1px solid black")), html_td(summary_min, style = Dict("border"=>"1px solid black"))]),
-                    html_tr([html_td("Inflection point(s)", style = Dict("border"=>"1px solid black")), html_td(summary_inflection, style = Dict("border"=>"1px solid black"))]),
-                    html_tr([html_td("Left behavior", style = Dict("border"=>"1px solid black")), html_td("$(summary.left_behavior)", style = Dict("border"=>"1px solid black"))]),
-                    html_tr([html_td("Right behavior", style = Dict("border"=>"1px solid black")), html_td("$(summary.right_behavior)", style = Dict("border"=>"1px solid black"))]),
-                    ],
-                    style = Dict("border"=>"1px solid black")
-                )
-                # return summary_md, summary_html, html_img(src = "data:image/$imageFormat;base64,$(open(base64encode, figname))")
-                return ("", false,summary_html, 
-                        html_div([
-                            html_h6("Sign charts:")
-                            html_img(src = "data:image/$imageFormat;base64,$(open(base64encode, figname))")
-                        ]))
+
+                # catch errors in the function
+                valid_expression = true
+                error_msg = ""
+                try
+                    sympy.parse_expr(fcn)
+                catch e 
+                    valid_expression = false
+                    error_msg = e
+                end
+
+                if valid_expression
+                    labels = isempty(labels) ? "y" : labels
+                    # xrange = (parse(Int64, left_endpt),parse(Int64, right_endpt))
+                    # dotverticaljog = parse(Int64, dotverticaljog)
+                    # marksize = parse(Int64, marksize)
+                    # tickfontsize = parse(Int64, tickfontsize)
+                    # digits = parse(Int64, digits)
+                    # horiz_jog = parse(Float64, horiz_jog)
+                    size = (size_horizontal, size_vertical)
+                    # size = (parse(Int64, size_horizontal), parse(Int64, size_vertical))
+                    imageFormat_symbol = Symbol(imageFormat)
+                    summary = function_summary(sympy.parse_expr(fcn); domain, labels, dotverticaljog, marksize, tickfontsize, digits, horiz_jog, size, imageFormat = imageFormat_symbol, xrange = missing)
+                    figname = "./assets/summarysignchart."*imageFormat
+                    savefig(summary.signcharts, figname)
+                    # println(summary)
+                    # summary_md = """
+                    # | Property | Value(s) |
+                    # | -------- | ---------|
+                    # | *y*-intercept | $(summary.y_intercept) |
+                    # | Local Maxiumum | $(summary.max[1]) |
+                    # | Local Minimum | $(summary.min[1]) |
+                    # | Inflection point(s) | $(summary.inflection[1]) |
+                    # | Left behavior | $(summary.left_behavior) |
+                    # | Right behavior | $(summary.right_behavior) |
+                    # """
+                    summary_max = isempty(summary.max) ? "None" : join(string.(summary.max), ", ")
+                    summary_min = isempty(summary.min) ? "None" : join(string.(summary.min), ", ")
+                    summary_inflection = isempty(summary.inflection) ? "None" : join(string.(summary.inflection), ", ")
+                    summary_holes = isempty(summary.holes) ? "None" : join(string.(summary.holes), ", ") # new line
+                    summary_html = 
+                    html_table([
+                        html_tr([html_td("y-intercept", style = Dict("border"=>"1px solid black")), html_td("$(summary.y_intercept)", style = Dict("border"=>"1px solid black"))]),
+                        html_tr([html_td("Local Maxiumum", style = Dict("border"=>"1px solid black")), html_td(summary_max, style = Dict("border"=>"1px solid black"))]),
+                        html_tr([html_td("Local Minimum", style = Dict("border"=>"1px solid black")), html_td(summary_min, style = Dict("border"=>"1px solid black"))]),
+                        html_tr([html_td("Inflection point(s)", style = Dict("border"=>"1px solid black")), html_td(summary_inflection, style = Dict("border"=>"1px solid black"))]),
+                        html_tr([html_td("Holes(s)", style = Dict("border"=>"1px solid black")), html_td(summary_holes, style = Dict("border"=>"1px solid black"))]),# new line
+                        html_tr([html_td("Left behavior", style = Dict("border"=>"1px solid black")), html_td("$(summary.left_behavior)", style = Dict("border"=>"1px solid black"))]),
+                        html_tr([html_td("Right behavior", style = Dict("border"=>"1px solid black")), html_td("$(summary.right_behavior)", style = Dict("border"=>"1px solid black"))]),
+                        ],
+                        style = Dict("border"=>"1px solid black")
+                    )
+                    # return summary_md, summary_html, html_img(src = "data:image/$imageFormat;base64,$(open(base64encode, figname))")
+                    return ("", false,summary_html, 
+                            html_div([
+                                html_h6("Sign charts:")
+                                html_img(src = "data:image/$imageFormat;base64,$(open(base64encode, figname))")
+                            ]))
+                else
+                    ("Invalid function syntax. $error_msg", true, "", "")
+                end
             end
         end
     end
@@ -929,7 +999,21 @@ begin
                 ("Please enter the order of the derivative (first, second, etc) as an positive integer. E.g. 1", true, "")
             else
                 fcn = replace(fcn, "^" => "**")
-                return ("", false, "$(diff(sympy.parse_expr(fcn), x, n))")
+                # catch errors in the function
+                valid_expression = true
+                error_msg = ""
+                try
+                    sympy.parse_expr(fcn)
+                catch e 
+                    valid_expression = false
+                    error_msg = e
+                end
+
+                if valid_expression
+                    return ("", false, "$(diff(sympy.parse_expr(fcn), x, n))")
+                else
+                    ("Invalid function syntax. $error_msg", true, "")
+                end
             end
         end
     end
@@ -952,7 +1036,21 @@ begin
                 ("Please enter the variable. E.g. x", true, "")
             else
                 fcn = replace(fcn, "^" => "**")
-                return ("", false, "$(int(sympy.parse_expr(fcn), sympy.parse_expr(integral_var)))")
+                # catch errors in the function
+                valid_expression = true
+                error_msg = ""
+                try
+                    sympy.parse_expr(fcn)
+                catch e 
+                    valid_expression = false
+                    error_msg = e
+                end
+
+                if valid_expression
+                    return ("", false, "$(int(sympy.parse_expr(fcn), sympy.parse_expr(integral_var)))")
+                else
+                    ("Invalid function syntax. $error_msg", true, "")
+                end
             end
         end
     end
@@ -980,17 +1078,33 @@ begin
                 ("Please enter the lower or upper limit of the integral. E.g. 2", true, "")
             else
                 fcn = replace(fcn, "^" => "**")
-                if reduce == "reduced"
-                    return ("", false, "$(N(int(sympy.parse_expr(fcn), (sympy.parse_expr(integral_var), a, b))))")
+                # catch errors in the function
+                valid_expression = true
+                error_msg = ""
+                try
+                    sympy.parse_expr(fcn)
+                catch e 
+                    valid_expression = false
+                    error_msg = e
+                end
+
+                if valid_expression
+                    if reduce == "reduced"
+                        return ("", false, "$(N(int(sympy.parse_expr(fcn), (sympy.parse_expr(integral_var), a, b))))")
+                    else
+                        return ("", false, "$(int(sympy.parse_expr(fcn), (sympy.parse_expr(integral_var), a, b)))")
+                    end
                 else
-                    return ("", false, "$(int(sympy.parse_expr(fcn), (sympy.parse_expr(integral_var), a, b)))")
+                    ("Invalid function syntax. $error_msg", true, "")
                 end
             end
         end
     end
 end
 
-println("\nOpen your browswer to: http://127.0.0.1:8050/")
+begin
+    println("\nOpen your browswer to: http://127.0.0.1:8050/")
 
-run_server(app, "0.0.0.0", debug=true, dev_tools_hot_reload = false)
-# run_server(app, "0.0.0.0", debug=true)
+    run_server(app, "0.0.0.0", debug=true, dev_tools_hot_reload = false)
+    # run_server(app, "0.0.0.0", debug=true)
+end

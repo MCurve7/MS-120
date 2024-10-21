@@ -1,9 +1,10 @@
 using Revise
 includet("JSUMS120-dash.jl")
 
+#function functionplot 861
 
 # f = (x^2+5*x+6)/(x+2)
-# f = (x^2+5*x+6)/(x^2-9)
+f = (x^2+5*x+6)/(x^2-9)
 # f = (x^2+5*x+6)/(x^2-25)
 # f = x^3
 # f = 5*x
@@ -14,7 +15,7 @@ includet("JSUMS120-dash.jl")
 # f = (x+1)/(x-1)
 # f = x/(x^2+2)
 # f = 33/(x+7)^(2/5)
-f = (2*x^2-3*x)/(x^2+9)
+# f = (2*x^2-3*x)/(x^2+9)
 # f = exp(x)
 # f = exp(x^2)
 # f = sqrt(x)
@@ -31,9 +32,11 @@ f = (2*x^2-3*x)/(x^2+9)
 #     end
 # end
 
-function_summary(f)
+lim(f, x, 3)
 
-infpt = inflection_points(f)
-infpt = [simplify.(x) for x in infpt]
-convert.(Tuple{Float64, Float64}, infpt)
-infpt[:]
+try
+    sympy.parse_expr("(x**2+5*x+6)/(x**2-)")
+catch e 
+    # m = match(r"<class '(.*)'>", e)
+    println("Caught error: $(typeof(e))")
+end
