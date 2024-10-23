@@ -3,7 +3,6 @@
 
 using PrettyTables
 using SpecialFunctions
-# using Formatting
 using Format
 using Statistics
 using DataFrames
@@ -13,6 +12,7 @@ using SymPy
 using PyCall
 using LaTeXStrings
 # using PlotlyJS
+# using Formatting
 
 
 
