@@ -14,8 +14,6 @@ using LaTeXStrings
 # using PlotlyJS
 # using Formatting
 
-
-
 begin
 	x = Sym("x")
 	y = symbols("y", real = true) #Need for f = abs
