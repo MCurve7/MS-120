@@ -4,7 +4,7 @@ includet("JSUMS120-dash.jl")
 #function functionplot 861
 
 # f = (x^2+5*x+6)/(x+2)
-f = (x^2+5*x+6)/(x^2-9)
+# f = (x^2+5*x+6)/(x^2-9)
 # f = (x^2+5*x+6)/(x^2-25)
 # f = x^3
 # f = 5*x
@@ -13,9 +13,12 @@ f = (x^2+5*x+6)/(x^2-9)
 # f = (x+3)/((x+1)*(x-1))*(x-3)
 # f = (x+1)*(x-1)*(x-3)
 # f = (x+1)/(x-1)
+# f = (x+1)/((x-1)*(x+1))
+f = (x+1)/(x^2-1)
 # f = x/(x^2+2)
 # f = 33/(x+7)^(2/5)
 # f = (2*x^2-3*x)/(x^2+9)
+# f = x^3+3*x^2+1
 # f = exp(x)
 # f = exp(x^2)
 # f = sqrt(x)
@@ -32,11 +35,8 @@ f = (x^2+5*x+6)/(x^2-9)
 #     end
 # end
 
-lim(f, x, 3)
+a = function_summary(f)
 
-try
-    sympy.parse_expr("(x**2+5*x+6)/(x**2-)")
-catch e 
-    # m = match(r"<class '(.*)'>", e)
-    println("Caught error: $(typeof(e))")
-end
+criticalpoints(f)
+
+functionplot(f, (-5,5))

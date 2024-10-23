@@ -5,9 +5,9 @@
 # import Pkg; Pkg.add("LaTeXStrings")
 
 using Dash, DashBootstrapComponents, Base64
-using Revise
-includet("JSUMS120-dash.jl")
-# include("JSUMS120-dash.jl")
+# using Revise
+# includet("JSUMS120-dash.jl")
+include("JSUMS120-dash.jl")
 
 begin
     if !isdir("./assets/")

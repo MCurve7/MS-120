@@ -250,8 +250,9 @@ function criticalpoints(f)
 	# println("crpt_num: $crpt_num")
 	
 	# crpt_den = solve(simplify(1/f), check=false) #without simplify results in failure
-	crpt_den = solve(1/f, check=false) #without simplify results in failure
-	filter!(e->e=="zoo", crpt_num)
+	crpt_den = solve(1/f, check=false) 
+	filter!(e->e!="zoo", crpt_den)
+	# println("crpt_den: $crpt_den")
 	
 	# println("crpt_num = $crpt_num; crpt_den: $crpt_den")
 	crpt_hole = intersect(crpt_num, crpt_den)
@@ -262,12 +263,16 @@ function criticalpoints(f)
 	# for z in N.(crpt_num)
 	# 	println("z = $z, real(z) = $(real(z))")
 	# end
-	crpt_num = [real(z) for z in N.(crpt_num)] # Get rid of complex (looking) solutions
+	# crpt_num = [real(z) for z in N.(crpt_num)] # Get rid of complex (looking) solutions
+	crpt_num = [real(N(x)) for x in crpt_num if isreal(x)]
 	# println("crpt_num = $crpt_num")
 	filter!(e->!isa(e, Bool),crpt_num) # Was getting booleans and this removes them
-	crpt_den = [real(z) for z in N.(crpt_den) if imag(z) == 0] # Get rid of complex (looking) solutions. Added if statement since some complex were comverting to 0.0 and sneaking through
+	# crpt_den = [real(z) for z in N.(crpt_den) if imag(z) == 0] # Get rid of complex (looking) solutions. Added if statement since some complex were comverting to 0.0 and sneaking through
+	crpt_den = [real(N(x)) for x in crpt_den if isreal(x)]
 	# println("crpt_den = $crpt_den\n")
 	filter!(e->!isa(e, Bool),crpt_den)
+	crpt_hole = [real(N(x)) for x in crpt_hole if isreal(x)]
+	filter!(e->!isa(e, Bool),crpt_hole)
 
 	# to make sure zeros and undefined remain type Real:
 	for x in crpt_num
@@ -800,7 +805,10 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
 	# Need to check if any holes coincide with the ends of the domain and adjust graph if necessary e.g. hole at x = 2 and domain = [2, 5] needs open dot
 	# Having problems when hole and domain endpoint coinciding.
 
+	# println("f=$f")
 	crpt_num, crpt_denom, crpt_hole = criticalpoints(f)
+	# println("crpt_num=$crpt_num, crpt_denom=$crpt_denom, crpt_hole=$crpt_hole")
+	asymptote_vert = setdiff(crpt_denom, crpt_hole)
 
     #p = plot(values, f, legend = :outertopright, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat)
 	interval = convert_to_interval(domain)
@@ -828,8 +836,8 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
     
 	p = yaxis!(label, yguidefontsize=18)
     #Draw vertical asymptotes if they exist
-    asymptote_vert = solve(simplify(1/f))
-	filter!(e->isa(e, Real),asymptote_vert) # Was getting complex values and this removes them
+    # asymptote_vert = solve(simplify(1/f))
+	# filter!(e->isa(e, Real),asymptote_vert) # Was getting complex values and this removes them
     if length(asymptote_vert) != 0
         p = vline!(asymptote_vert, line = :dash)
     end
@@ -866,6 +874,7 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
 	
 	#Draw any holes that exists
 	if !isempty(crpt_hole)
+		# println("I see holes")
 		y_holes = []
 		for c in crpt_hole
 			if xrange[1] < c < xrange[2]
@@ -1235,12 +1244,14 @@ imageFormat: image format for the sign charts (default :svg),\n
 xrange: ?
 """
 function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", dotverticaljog=0, marksize=8, tickfontsize = 20, digits= 2, horiz_jog = 0.2, size=(1000, 400), imageFormat = :svg, xrange = missing) where {T <: Union{Function, Sym}}
+	# println("fcn summary: f = $f")
     #Need to adjust values based on domain
 	# Fix for abs(x), exp(x^2)
 	
 	_, _, crpt_hole = criticalpoints(f)
 
 	if f == abs(x)
+		# println("f is |x|")
 		f = abs(y)
 	end
 
@@ -1286,6 +1297,7 @@ function function_summary(f::T; domain::String = "(-∞, ∞)", labels = "y", do
 
 	#vvv
 	# sign_chart = signcharts(f(x); labels=labels, domain = domain, horiz_jog = horiz_jog, size=size, dotverticaljog = dotverticaljog, marksize = marksize, tickfontsize = tickfontsize, imageFormat = imageFormat, xrange = xrange)
+	# println("f = $f")
 	sign_chart = signcharts(f; labels=labels, domain = domain, horiz_jog = horiz_jog, size=size, dotverticaljog = dotverticaljog, marksize = marksize, tickfontsize = tickfontsize, imageFormat = imageFormat, xrange = xrange)
 	# println("Found sign charts")
 	    
@@ -1369,6 +1381,7 @@ imageFormat: image format for the sign charts (default :svg),\n
 xrange: ?
 """
 function function_summary(a::T; domain::String = "(-∞, ∞)", labels = "y", dotverticaljog=0, marksize=8, tickfontsize = 20, digits= 2, horiz_jog = 0.2, size=(1000, 400), imageFormat = :svg, xrange = missing) where {T <: Union{Real, Int64}}
+	# println("Constant fcn.")
 	sign_chart = signcharts(a; labels=labels, domain = domain, horiz_jog = horiz_jog, size=size, dotverticaljog = dotverticaljog, marksize = marksize, tickfontsize = tickfontsize, imageFormat = imageFormat, xrange = xrange)
 	(y_intercept = a, max = [], min = [], inflection = [], left_behavior = a, right_behavior = a, signcharts = sign_chart)
 end
