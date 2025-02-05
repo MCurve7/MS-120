@@ -1,4 +1,4 @@
-Fall 2024 we will be using the Dash version of JSUMS120.
+**Spring 2025** we will be using the **VS Code** version of JSUMS120.
 
 The JSUMS120.jl file is my frontend to the SymPy.jl package.
 It is intended to make it easier for my Applied Calculus students to learn calculus. 
@@ -8,9 +8,12 @@ but it was too slow.
 I then rewrote it to run in VS Code.
 That works fine,
 but the output doesn't look as nice.
+But after trying other variants (Pluto and Dash), 
+this is the best version.
+So I will be on centrating on the VS Code version for now.
 
-So my currect iteration is to use Dash.
-You will need to save JSUMS120-dash.jl and JSUMS120-dashapp.jl in the same directory,
+Then I tried to use Dash, but it was just too slow.
+If you want to play with this version, you will need to save JSUMS120-dash.jl and JSUMS120-dashapp.jl in the same directory,
 then open and run the code in JSUMS120-dashapp.jl.
 
 To use this in Pluto you need to download and save the JSUMS120.jl file in the same directory as where you will save your Pluto notebook. 
