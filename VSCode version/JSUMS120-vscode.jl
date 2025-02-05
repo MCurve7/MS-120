@@ -7,6 +7,7 @@ using Plots
 using Printf
 using SymPy
 using PyCall
+using Colors
 # using PlotlyJS
 
 
@@ -82,35 +83,36 @@ end
 
 ###############################################################################################################################
 """
-    limittable(f, a; rows::Int=5, dir::String="", format="%10.8f")
+    limittable(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red])
 
 a: a finite number\n
 rows: number of rows to compute (default is 5 rows)\n
 dir: a string indicating which side to take the limit from\n
-format: a string that specifies c-style printf format for numbers (default is %10.8f)
+format: a string that specifies c-style printf format for numbers (default is %10.8f)\n
+colors: a vector of symbols or strings that control the color of the left and right hand limits
 
 |dir|meaning|
 |---|-------|
 |""|approach from both sides (default)|
 |"-"|approach from the left|
 |"+"|approach from the right|
-"""
-function limittable(f, a; rows::Int=5, dir::String="", format="%10.8f") # for finite x->a
 
-	# hl_head = HtmlHighlighter((data, i, j) -> (i == 1) , HtmlDecoration(font_weight = "bold"))
+Color options can be found here: https://juliagraphics.github.io/Colors.jl/stable/namedcolors/
+"""
+function limittable(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red]) # for finite x->a
+	crayon_color_right = Crayon(foreground = Colors.color_names[string(colors[2])], bold = true)
+	crayon_color_left = Crayon(foreground = Colors.color_names[string(colors[1])], bold = true)
     if dir == "+"
         X = a .+ [10.0^(-i) for i in 1:rows-2] # broadcast: a + each elt in array
         X = vcat([a + 1, a + 0.5], X) # add rows at the top of X
         Y = [N(f(z)) for z in X] # make array of outputs f(X)
-		hl_right = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon"red bold")
-		# pretty_table(HTML, hcat(X, Y); header = ["x → $(a)⁺", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_right))	
+		hl_right = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_right)
 		pretty_table(hcat(X, Y); header = ["x → $(a)⁺", "y"], formatters = ft_printf(format), highlighters = (hl_right))	
     elseif dir == "-"
         X = a .- [10.0^(-i) for i in 1:rows-2]
         X = vcat([a - 1, a - 0.5], X)
         Y = [N(f(z)) for z in X]
-		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon"blue bold")
-    	# pretty_table(HTML, hcat(X, Y); header = ["x → $(a)⁻", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_left))
+		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
 		pretty_table(hcat(X, Y); header = ["x → $(a)⁻", "y"], formatters = ft_printf(format), highlighters = (hl_left))
     else # ?Make seperate functions for left/right limit and hcat them for 2-sided limit below?
         Xr = a .+ [10.0^(-i) for i in 1:rows-2]
@@ -119,37 +121,38 @@ function limittable(f, a; rows::Int=5, dir::String="", format="%10.8f") # for fi
         Xl = a .- [10.0^(-i) for i in 1:rows-2]
         Xl = vcat([a - 1, a - 0.5], Xl)
         Yl = [N(f(z)) for z in Xl]
-		# pretty_table(hcat(Xl, Yl, Xr, Yr), header = ["x → $(a)⁻", "y", "x → $(a)⁺", "y"], formatters = ft_printf(format), backend = Val(:html))
-		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon"blue bold")#crayon"#0041C2")
-		hl_right = Highlighter(f =(data, i, j) -> (j == 4) , crayon = crayon"red bold")
-		# hl_left = Highlighter(f      = (data, i, j) -> (data[i, j] < 0.5), crayon = crayon"red bold" )
-		# hl_right = Highlighter(f      = (data, i, j) -> (data[i, j] < 0.5), crayon = crayon"red bold" )
-		# pretty_table(HTML, hcat(Xl, Yl, Xr, Yr), header = ["x → $(a)⁻", "y", "x → $(a)⁺", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_left, hl_right))
+		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
+		hl_right = Highlighter(f =(data, i, j) -> (j == 4) , crayon = crayon_color_right)
 		pretty_table(hcat(Xl, Yl, Xr, Yr), header = ["x → $(a)⁻", "y", "x → $(a)⁺", "y"], formatters = ft_printf(format), highlighters = (hl_left, hl_right))
     end
 end
 
 """
-    limittable(f, a::Sym; rows::Int=5, format="%10.2f")
+    limittable(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red])
 
 a: is either oo (meaning ∞) or -oo (meaning -∞)\n
 rows: number of rows to compute (default is 5 rows)\n
-format: a string that specifies c-style printf format for numbers (default is %10.2f)
+format: a string that specifies c-style printf format for numbers (default is %10.2f)\n
+colors: a vector of symbols or strings that control the color of the left and right hand limits
+
+Color options can be found here: https://juliagraphics.github.io/Colors.jl/stable/namedcolors/
 """
-function limittable(f, a::Sym; rows::Int=5, format="%10.2f") # for infinite x->oo/-oo
+function limittable(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red]) # for infinite x->oo/-oo
 	# hl_head = HtmlHighlighter((data, i, j) -> (i == 1) , HtmlDecoration(font_weight = "bold"))
+	crayon_color_right = Crayon(foreground = Colors.color_names[string(colors[2])], bold = true)
+	crayon_color_left = Crayon(foreground = Colors.color_names[string(colors[1])], bold = true)
     if a == oo
         X = [10.0^(i+1) for i in 1:rows]
         Y = [N(f(z)) for z in X]
 		# hl_right = HtmlHighlighter((data, i, j) -> (j == 2) , HtmlDecoration(color = "red"))
-		hl_right = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon"red bold")
+		hl_right = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_right)
         # pretty_table(HTML, hcat(X, Y); header = ["x → ∞", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_right))
 		pretty_table(hcat(X, Y); header = ["x → ∞", "y"], formatters = ft_printf(format), highlighters = (hl_right))
     elseif a == -oo
         X = [-1*10.0^(i+1) for i in 1:rows]
         Y = [N(f(z)) for z in X]
 		# hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , HtmlDecoration(color = "#0041C2"))
-		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon"blue bold")
+		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
         # pretty_table(HTML, hcat(X, Y); header = ["x → -∞", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_left))
 		pretty_table(hcat(X, Y); header = ["x → -∞", "y"], formatters = ft_printf(format), highlighters = (hl_left))
     end
