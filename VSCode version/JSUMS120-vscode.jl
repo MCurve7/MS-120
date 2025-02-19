@@ -213,44 +213,20 @@ function lim(f, var, c; dir = "")
 end
 
 ###############################################################################################################################
-"""
-    criticalpoints(f(x))
+# """
+#     criticalpoints(f(x))
 
-Find the critical points of the function f(x).
+# Find the critical points of the function f(x).
 
-Returns a pair of vectors with the first vector the values that make ``f(x) = 0`` and the second vector the values that make ``f(x)`` undefined.
-"""
-function criticalpoints(f)
-	zeros = Real[]
-	undefined = Real[]
-
-	crpt_num = solve(f(x))
-	#crpt_num = N.(crpt_num)
-	crpt_den = solve(simplify(1/f(x))) #without simplify failure
-	#crpt_den = N.(crpt_den)
-
-	crpt_num = [real(z) for z in N.(crpt_num)] # Get rid of complex (looking) solutions
-	crpt_den = [real(z) for z in N.(crpt_den)] # Get rid of complex (looking) solutions
-
-	# to make sure zeros and undefined remain type Real:
-	for x in crpt_num
-		append!(zeros, x)
-	end
-	for x in crpt_den
-		append!(undefined, x)
-	end
-
-	# (zeros = sort(crpt_num), undefined = sort(crpt_den)) was retuning Any[] can delete if new code works
-	(zeros = zeros, undefined = undefined)
-end
-#Changed to above to allow f and f(x). Delete below if works in Pluto
+# Returns a pair of vectors with the first vector the values that make ``f(x) = 0`` and the second vector the values that make ``f(x)`` undefined.
+# """
 # function criticalpoints(f)
 # 	zeros = Real[]
 # 	undefined = Real[]
 
-# 	crpt_num = solve(f)
+# 	crpt_num = solve(f(x))
 # 	#crpt_num = N.(crpt_num)
-# 	crpt_den = solve(simplify(1/f)) #without simplify failure
+# 	crpt_den = solve(simplify(1/f(x))) #without simplify failure
 # 	#crpt_den = N.(crpt_den)
 
 # 	crpt_num = [real(z) for z in N.(crpt_num)] # Get rid of complex (looking) solutions
@@ -267,6 +243,107 @@ end
 # 	# (zeros = sort(crpt_num), undefined = sort(crpt_den)) was retuning Any[] can delete if new code works
 # 	(zeros = zeros, undefined = undefined)
 # end
+# #Changed to above to allow f and f(x). Delete below if works in Pluto
+# # function criticalpoints(f)
+# # 	zeros = Real[]
+# # 	undefined = Real[]
+
+# # 	crpt_num = solve(f)
+# # 	#crpt_num = N.(crpt_num)
+# # 	crpt_den = solve(simplify(1/f)) #without simplify failure
+# # 	#crpt_den = N.(crpt_den)
+
+# # 	crpt_num = [real(z) for z in N.(crpt_num)] # Get rid of complex (looking) solutions
+# # 	crpt_den = [real(z) for z in N.(crpt_den)] # Get rid of complex (looking) solutions
+
+# # 	# to make sure zeros and undefined remain type Real:
+# # 	for x in crpt_num
+# # 		append!(zeros, x)
+# # 	end
+# # 	for x in crpt_den
+# # 		append!(undefined, x)
+# # 	end
+
+# # 	# (zeros = sort(crpt_num), undefined = sort(crpt_den)) was retuning Any[] can delete if new code works
+# # 	(zeros = zeros, undefined = undefined)
+# # end
+
+# """
+#     criticalpoints(a::T) where {T <: Real}
+
+# Find the critical points for the constant function f(x).
+
+# Returns the pair of vectors ([], []).
+# """
+# function criticalpoints(a::T) where {T <: Real}
+# 	(zeros = Real[], undefined = Real[])
+# end
+
+# # criticalpoints(c(x))
+# # criticalpoints(c) #Has ERROR
+# # criticalpoints(2)
+
+"""
+    criticalpoints(f(x))
+
+Find the critical points of the function f(x).
+
+Returns a pair of vectors with the first vector the values that make ``f(x) = 0`` and the second vector the values that make ``f(x)`` undefined.
+"""
+function criticalpoints(f)
+	# println("Calling criticalpoints")
+	# println("f = $f")
+	# Need to fix for abs(x)
+	zeros = Real[]
+	undefined = Real[]
+
+	# println("f = ?, f = $f")
+	if f == abs(x)
+		f = abs(y)
+	end
+	# crpt_num = solve(f(x))
+	# crpt_den = solve(simplify(1/f(x)))
+
+	crpt_num = solve(f, check=false)
+	# println("crpt_num: $crpt_num")
+	
+	# crpt_den = solve(simplify(1/f), check=false) #without simplify results in failure
+	crpt_den = solve(1/f, check=false) 
+	filter!(e->e!="zoo", crpt_den)
+	# println("crpt_den: $crpt_den")
+	
+	# println("crpt_num = $crpt_num; crpt_den: $crpt_den")
+	crpt_hole = intersect(crpt_num, crpt_den)
+	crpt_num = setdiff(crpt_num, crpt_hole)
+
+	# println("crpt_num = $crpt_num, crpt_den = $crpt_den, crpt_hole = $crpt_hole")
+
+	# for z in N.(crpt_num)
+	# 	println("z = $z, real(z) = $(real(z))")
+	# end
+	# crpt_num = [real(z) for z in N.(crpt_num)] # Get rid of complex (looking) solutions
+	crpt_num = [real(N(x)) for x in crpt_num if isreal(x)]
+	# println("crpt_num = $crpt_num")
+	filter!(e->!isa(e, Bool),crpt_num) # Was getting booleans and this removes them
+	# crpt_den = [real(z) for z in N.(crpt_den) if imag(z) == 0] # Get rid of complex (looking) solutions. Added if statement since some complex were comverting to 0.0 and sneaking through
+	crpt_den = [real(N(x)) for x in crpt_den if isreal(x)]
+	# println("crpt_den = $crpt_den\n")
+	filter!(e->!isa(e, Bool),crpt_den)
+	crpt_hole = [real(N(x)) for x in crpt_hole if isreal(x)]
+	filter!(e->!isa(e, Bool),crpt_hole)
+
+	# to make sure zeros and undefined remain type Real:
+	for x in crpt_num
+		append!(zeros, x)
+	end
+	for x in crpt_den
+		append!(undefined, x)
+	end
+
+	# println("crpt_hole = $crpt_hole")
+
+	(zeros = zeros, undefined = undefined, holes = crpt_hole)
+end
 
 """
     criticalpoints(a::T) where {T <: Real}
@@ -276,12 +353,8 @@ Find the critical points for the constant function f(x).
 Returns the pair of vectors ([], []).
 """
 function criticalpoints(a::T) where {T <: Real}
-	(zeros = Real[], undefined = Real[])
+	(zeros = Real[], undefined = Real[], holes = Real[])
 end
-
-# criticalpoints(c(x))
-# criticalpoints(c) #Has ERROR
-# criticalpoints(2)
 
 ###############################################################################################################################
 """
@@ -788,9 +861,134 @@ function signcharts(a::T; labels="y", domain = "(-oo, oo)", horiz_jog = 0.2, siz
 	Plots.plot(f_sc, fp_sc, fpp_sc, layout = (3,1))
 end
 
-###############################################################################################################################
+# ###############################################################################################################################
+# """
+# functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
+
+# Required:\n
+# f(x): the function to be ploted
+# xrange: a pair giving the ``x`` limits of the plot\n
+# Optional:\n
+# label: a string usually the name of the function\n
+# domain: an interval whritten as a string, e.g. "(-∞, 10]". It overrides xrange.\n
+# horiz_ticks: a range giving the horizontal ticks to be displayed\n
+# vert_ticks: a range giving the horizontal ticks to be displayed\n
+# yrange: a pair giving the ``y`` limits of the plot\n
+# xsteps: the step size for the ``x`` values (`xrange[1]:xsteps:xrange[2]`). Defaults to 0.01.\n
+# size: size of the graph as an ordered pair. Defaults to (1000, 500)\n
+# imageFormat: Only :svg and :png have any effect for now. Choices are :pdf, :png, :ps, :svg.\n
+# tickfontsize: \n
+# marksize: \n
+# """
+# function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
+#     #imageFormat can be :svg, :png, ... MAKE save image option for pdf and ps?
+#     #p = plot(values, f, legend = :outertopright, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat)
+# 	interval = convert_to_interval(domain)
+# 	# if xrange is bigger than the domain reset to the size of the domain
+# 	xrange_left, xrange_right = xrange
+# 	xrange_left = xrange[1] < interval.left ? interval.left : xrange[1]
+# 	xrange_right = interval.right < xrange[2] ? xrange[2] : interval.right
+# 	xrange = (xrange_left, xrange_right)
+	
+# 	values = xrange[1]:xsteps:xrange[2]
+# 	if ismissing(horiz_ticks)
+# 		horiz_ticks = xrange[1]:xrange[2]
+# 	end
+	
+# 	p = Plots.plot(values, f, legend = false, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat, size=size, tickfontsize=tickfontsize)
+# 	if !ismissing(yrange)
+# 		p = Plots.plot!(ylim = yrange)
+# 	end
+# 	if !ismissing(vert_ticks) 
+# 		p = Plots.plot!(yticks=vert_ticks)
+# 	end
+    
+# 	p = yaxis!(label, yguidefontsize=18)
+#     #Draw vertical asymptotes if they exist
+#     asymptote_vert = solve(simplify(1/f))
+#     if length(asymptote_vert) != 0
+#         p = vline!(asymptote_vert, line = :dash)
+#     end
+#     #Determine if function goes to infinity on the left and right
+# 	lf_lim = lim(f, x, -oo)
+#     if ismissing(lf_lim) || (lf_lim == -oo || lf_lim == oo || lf_lim == -oo*1im || lf_lim == oo*1im) # why did I need oo*1im?
+#         lf_infty_bool = true
+#     else
+#         lf_infty_bool = false
+#     end
+# 	rt_lim = lim(f, x, oo)
+#     if ismissing(rt_lim) || (rt_lim == -oo || rt_lim == oo || rt_lim == -oo*1im || rt_lim == oo*1im)
+#         rt_infty_bool = true
+#     else
+#         rt_infty_bool = false
+#     end
+	
+#     if !lf_infty_bool && !rt_infty_bool
+# 		# Draw horizontal asymptote
+#         if lf_lim == rt_lim && lf_lim.is_number && rt_lim.is_number
+#             p = hline!([lf_lim], line = :dash)
+#         else
+# 			if lf_lim.is_number
+#             	p = hline!([lf_lim], line = :dash)
+# 			elseif rt_lim.is_number
+#             	p = hline!([rt_lim],  line = :dash)
+# 			end
+#         end
+#     elseif !lf_infty_bool && lf_lim.is_number
+#         p = hline!([lf_lim], line = :dash)
+#     elseif !rt_infty_bool && rt_lim.is_number
+#         p = hline!([rt_lim],  line = :dash)
+#     end
+	
+# 	# if either end of the domain is finite ifnd the end point and plot it.
+# 	left_endpoint_value = missing
+# 	right_endpoint_value = missing
+# 	if interval.left != -∞
+# 		left_endpoint_value = f(interval.left)
+# 	end
+# 	if interval.right != ∞
+# 		right_endpoint_value = f(interval.right)
+# 	end
+# 	if typeof(interval) == OpenOpenInterval
+# 		# println("OpenOpenInterval")
+# 		if !ismissing(left_endpoint_value)
+# 			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 		end
+# 		if !ismissing(right_endpoint_value)
+# 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 		end
+# 	elseif typeof(interval) == OpenClosedInterval
+# 		# println("OpenClosedInterval")
+# 		if !ismissing(left_endpoint_value)
+# 			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 		end
+# 		if !ismissing(right_endpoint_value)
+# 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+# 		end
+# 	elseif typeof(interval) == ClosedOpenInterval
+# 		# println("ClosedOpenInterval")
+# 		if !ismissing(left_endpoint_value)
+# 			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+# 		end
+# 		if !ismissing(right_endpoint_value)
+# 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 		end
+# 	else
+# 		# println("ClosedClosedInterval")
+# 		if !ismissing(left_endpoint_value)
+# 			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+# 		end
+# 		if !ismissing(right_endpoint_value)
+# 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+# 		end
+# 	end
+
+#     p
+# end
+
+# Updated 2025/02/18
 """
-functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
+	functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
 
 Required:\n
 f(x): the function to be ploted
@@ -809,14 +1007,25 @@ marksize: \n
 """
 function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
     #imageFormat can be :svg, :png, ... MAKE save image option for pdf and ps?
+	# Need to check if any holes coincide with the ends of the domain and adjust graph if necessary e.g. hole at x = 2 and domain = [2, 5] needs open dot
+	# Having problems when hole and domain endpoint coinciding.
+
+	# println("f=$f")
+	crpt_num, crpt_denom, crpt_hole = criticalpoints(f)
+	# println("crpt_num=$crpt_num, crpt_denom=$crpt_denom, crpt_hole=$crpt_hole")
+	asymptote_vert = setdiff(crpt_denom, crpt_hole)
+
     #p = plot(values, f, legend = :outertopright, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat)
 	interval = convert_to_interval(domain)
 	# if xrange is bigger than the domain reset to the size of the domain
 	xrange_left, xrange_right = xrange
+	
+	#Have the xrange agree with the domain when the domain is smaller
 	xrange_left = xrange[1] < interval.left ? interval.left : xrange[1]
-	xrange_right = interval.right < xrange[2] ? xrange[2] : interval.right
+	xrange_right = interval.right < xrange[2] ? interval.right : xrange[2]
 	xrange = (xrange_left, xrange_right)
 	
+	# Set the values to evaluate the function at.
 	values = xrange[1]:xsteps:xrange[2]
 	if ismissing(horiz_ticks)
 		horiz_ticks = xrange[1]:xrange[2]
@@ -832,7 +1041,8 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
     
 	p = yaxis!(label, yguidefontsize=18)
     #Draw vertical asymptotes if they exist
-    asymptote_vert = solve(simplify(1/f))
+    # asymptote_vert = solve(simplify(1/f))
+	# filter!(e->isa(e, Real),asymptote_vert) # Was getting complex values and this removes them
     if length(asymptote_vert) != 0
         p = vline!(asymptote_vert, line = :dash)
     end
@@ -867,6 +1077,18 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
         p = hline!([rt_lim],  line = :dash)
     end
 	
+	#Draw any holes that exists
+	if !isempty(crpt_hole)
+		# println("I see holes")
+		y_holes = []
+		for c in crpt_hole
+			if xrange[1] < c < xrange[2]
+				push!(y_holes, lim(f, x, c))
+			end
+		end
+		p = Plots.plot!(crpt_hole, y_holes, seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+	end
+
 	# if either end of the domain is finite ifnd the end point and plot it.
 	left_endpoint_value = missing
 	right_endpoint_value = missing
@@ -962,6 +1184,81 @@ end
 
 
 ###############################################################################################################################
+# """
+# 	extrema(f::Sym{PyObject}; domain::String = "(-∞, ∞)")
+
+# Returns a named tuple where the first element is the the local minima (named minima) and the second element is the local maxima (named maxima).
+# """
+# function extrema(f::T; domain::String = "(-∞, ∞)")  where {T <: Union{Function, Sym}}
+# # function extrema(f::Function; domain::String = "(-∞, ∞)") # Until I get Sym{PyObject} types to work in Pluto have to pass functions (f) and not Sym{PyObject} (f(x))!
+# # function extrema(f::Sym{PyObject}; domain::String = "(-∞, ∞)") # Check if domain endpoint is an extremum. If endpoint open not an extrema.
+# 	# Take derivatives
+#     f′ = diff(f(x))
+#     f′′ = diff(f′(x))
+
+# 	# find critical points
+#     crpt_num, crpt_den = criticalpoints(f′(x))
+
+# 	# use the 2nd derivative test to find max/mins
+#     second_derivative_at_crpt = []
+#     for x in crpt_num
+#         #push!(second_derivative_at_crpt, convert(Float32, f′′(x)))
+#         push!(second_derivative_at_crpt, (x,f′′(x)))
+#     end
+
+#     # add endpts if they exist
+#     interval = convert_to_interval(domain)
+#     left_end, right_end = end_behavior_aux(f, interval)
+#     max = NTuple{2, Real}[]
+#     min = NTuple{2, Real}[]
+#     # assuming the derivative is not = 0 at the endpoints, can add code later
+# 	# if the left endpoint a point where f is undefined and also isn't -∞ and not open
+# 	if interval.left ∉ crpt_den && interval.left ≠ -∞ && !ismissing(left_end)
+# 		# if the slope at the left endpoint is positive then it's a min
+# 		if f′(interval.left) > 0
+# 			push!(min, (interval.left, left_end))
+# 		# if it's negative then it's a max
+# 		elseif f′(interval.left) < 0
+# 			push!(max, (interval.left, left_end))
+# 		# if it's 0 then need to think about what this means
+# 		elseif f′(interval.left) == 0
+# 			throw(DomainError(0, "extrema function: This can't handle a slope of 0 at the endpoint yet."))
+# 		end
+# 	end
+# 	# for each x value and its concavity at x
+#     for (a, a′′) in second_derivative_at_crpt
+# 		# if we are between the left and right endpoints of the domain
+#         if interval.left == -∞ || (a > interval.left && a < interval.right)
+#             if a′′ < 0 # if the second derivative is negative then we have a max
+#                 push!(max, (a,f(a)))
+#             elseif a′′ > 0 # if the second derivative is positive then we have a min
+#                 push!(min, (a,f(a)))
+#             end
+#         end
+#     end
+	
+# 	if interval.right ≠ ∞ && !ismissing(right_end) # if the right endpoint is finite and not open
+# 		if f′(interval.right) < 0 # and the slope there is negative, we have a min
+# 			push!(min, (interval.right, right_end))
+# 		elseif f′(interval.right) > 0 # else if the slope is positive, we have a max
+# 			push!(max, (interval.right, right_end))
+# 		elseif f′(interval.right) == 0 # if it's 0 then need to think about what this means
+# 			throw(DomainError(0, "This can't handle a slope of 0 at the endpoints yet."))
+# 		end
+# 	end
+#     (minima = min, maxima = max)
+# end
+
+# """
+# 	extrema(f::Function; domain::String = "(-∞, ∞)")
+
+# Returns a named tuple where the first element is the the local minima (named minima) and the second element is the local maxima (named maxima).
+# """
+# function extrema(f::Function; domain::String = "(-∞, ∞)") # Check if domain endpoint is an extremum
+# 	extrema(f(x); domain = domain)
+# end
+
+# Updated 2025/02/18
 """
 	extrema(f::Sym{PyObject}; domain::String = "(-∞, ∞)")
 
@@ -971,17 +1268,23 @@ function extrema(f::T; domain::String = "(-∞, ∞)")  where {T <: Union{Functi
 # function extrema(f::Function; domain::String = "(-∞, ∞)") # Until I get Sym{PyObject} types to work in Pluto have to pass functions (f) and not Sym{PyObject} (f(x))!
 # function extrema(f::Sym{PyObject}; domain::String = "(-∞, ∞)") # Check if domain endpoint is an extremum. If endpoint open not an extrema.
 	# Take derivatives
-    f′ = diff(f(x))
-    f′′ = diff(f′(x))
+    # f′ = diff(f(x))
+    # f′′ = diff(f′(x))
+	f′ = diff(f)
+    f′′ = diff(f′)
 
 	# find critical points
-    crpt_num, crpt_den = criticalpoints(f′(x))
+	if f′.is_number
+		crpt_num, crpt_den, crpt_hole = criticalpoints(f′) # added since it was missing when f′ was constant
+	else
+    	crpt_num, crpt_den, crpt_hole = criticalpoints(f′(x))
+	end
 
 	# use the 2nd derivative test to find max/mins
     second_derivative_at_crpt = []
-    for x in crpt_num
+    for a in crpt_num
         #push!(second_derivative_at_crpt, convert(Float32, f′′(x)))
-        push!(second_derivative_at_crpt, (x,f′′(x)))
+        push!(second_derivative_at_crpt, (a,f′′.subs(x, a)))
     end
 
     # add endpts if they exist
@@ -990,7 +1293,7 @@ function extrema(f::T; domain::String = "(-∞, ∞)")  where {T <: Union{Functi
     max = NTuple{2, Real}[]
     min = NTuple{2, Real}[]
     # assuming the derivative is not = 0 at the endpoints, can add code later
-	# if the left endpoint a point where f is undefined and also isn't -∞ and not open
+	# if the left endpoint is a point where f isn't undefined and also isn't -∞ and not open
 	if interval.left ∉ crpt_den && interval.left ≠ -∞ && !ismissing(left_end)
 		# if the slope at the left endpoint is positive then it's a min
 		if f′(interval.left) > 0
@@ -1008,9 +1311,9 @@ function extrema(f::T; domain::String = "(-∞, ∞)")  where {T <: Union{Functi
 		# if we are between the left and right endpoints of the domain
         if interval.left == -∞ || (a > interval.left && a < interval.right)
             if a′′ < 0 # if the second derivative is negative then we have a max
-                push!(max, (a,f(a)))
+                push!(max, (a,f.subs(x, a)))
             elseif a′′ > 0 # if the second derivative is positive then we have a min
-                push!(min, (a,f(a)))
+                push!(min, (a,f.subs(x, a)))
             end
         end
     end
@@ -1027,15 +1330,6 @@ function extrema(f::T; domain::String = "(-∞, ∞)")  where {T <: Union{Functi
     (minima = min, maxima = max)
 end
 
-# """
-# 	extrema(f::Function; domain::String = "(-∞, ∞)")
-
-# Returns a named tuple where the first element is the the local minima (named minima) and the second element is the local maxima (named maxima).
-# """
-# function extrema(f::Function; domain::String = "(-∞, ∞)") # Check if domain endpoint is an extremum
-# 	extrema(f(x); domain = domain)
-# end
-
 """
 	extrema(a::Real; domain::String = "(-∞, ∞)")
 
@@ -1046,6 +1340,34 @@ function extrema(a::Real; domain::String = "(-∞, ∞)") # Check if domain endp
 end
 
 ###############################################################################################################################
+# """
+# 	inflection_points(f::Union{Function, Sym}; domain::String = "(-∞, ∞)")
+
+# Takes a function `f` and  optionally a domain and returns a vector of the critical points in the domain.
+# f: Can be entered as `f` or `f(x)`. 
+# domain: the domain of the function entered as a string (default "(-∞, ∞)"),\n
+# """
+# function inflection_points(f::Union{Function, Sym}; domain::String = "(-∞, ∞)")
+# 	infpt = []
+
+# 	interval = convert_to_interval(domain)
+# 	f′ = diff(f)
+# 	f′′ = diff(f′)
+# 	f′′′ = diff(f′′)
+# 	crpt_num, crpt_den = criticalpoints(f′′)
+
+# 	for x in crpt_num
+# 		if x > interval.left && x < interval.right
+# 			if f′′′ ≠ 0
+# 				push!(infpt, (x,f(x)))
+# 			end
+# 		end
+# 	end
+
+#     infpt
+# end
+
+# Updated 2025/02/18
 """
 	inflection_points(f::Union{Function, Sym}; domain::String = "(-∞, ∞)")
 
@@ -1060,12 +1382,14 @@ function inflection_points(f::Union{Function, Sym}; domain::String = "(-∞, ∞
 	f′ = diff(f)
 	f′′ = diff(f′)
 	f′′′ = diff(f′′)
-	crpt_num, crpt_den = criticalpoints(f′′)
-
-	for x in crpt_num
-		if x > interval.left && x < interval.right
+	# crpt_num, crpt_den = criticalpoints(f′′)
+	crpt_num, _, _ = criticalpoints(f′′)
+	crpt_num = unique(crpt_num)
+# println("crpt_num = $crpt_num")
+	for a in crpt_num
+		if a > interval.left && a < interval.right
 			if f′′′ ≠ 0
-				push!(infpt, (x,f(x)))
+				push!(infpt, (a, f.subs(x, a)))
 			end
 		end
 	end

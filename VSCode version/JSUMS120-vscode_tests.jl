@@ -1,4 +1,8 @@
 using Revise
+using LaTeXStrings
+import Term: tprintln
+using Term.TermMarkdown
+using Markdown
 includet("JSUMS120-vscode.jl")
 
 begin
@@ -80,20 +84,22 @@ criticalpoints(p(x))
 criticalpoints(r(x))
 criticalpoints(r1(x))
 criticalpoints(e(x))
+
+# ERROR
 criticalpoints(a(x))
 
 
-criticalpoints(g)
-criticalpoints(s)
-criticalpoints(g′′)
-criticalpoints(p)
-criticalpoints(r)
-criticalpoints(r1)
-criticalpoints(e)
+# criticalpoints(g)
+# criticalpoints(s)
+# criticalpoints(g′′)
+# criticalpoints(p)
+# criticalpoints(r)
+# criticalpoints(r1)
+# criticalpoints(e)
 
-# solve(abs(x))
-# criticalpoints(a(x))
-criticalpoints(a)
+# # solve(abs(x))
+# # criticalpoints(a(x))
+# criticalpoints(a)
 
 # Test ###################################################
 getsign(f, 0)
@@ -130,7 +136,7 @@ domain_from_str("(2.0, 5)")
 
 
 # Test ###################################################
-convert_to_interval("(-2, 2π)") # ASk form on hiw to do this!
+convert_to_interval("(-2, 2π)") # Ask form on hiw to do this!
 convert_to_interval("(-2, $(2π))") #<--
 tpattern = r"\s*(\[|\()\s*(-?[\p{Any}|\d]*)\s*,\s*(-?[\p{Any}|\d]*)\s*(\]|\))\s*"
 tre_matched = match(tpattern, "(-2, 2π)")
@@ -160,28 +166,42 @@ getsigns_aux(p(x), "[-4, 5)", cp; xrange = missing)
 getsigns(p, [-2, 1, 3])
 getsigns(s, [0]; domain = "[0, oo)")
 getsigns(s, [0]; domain = "[0, ∞)")
+
+# ERROR VVV
 getsigns(g, criticalpoints(g(x))..., domain="(.1, ∞)")
 getsigns(g′′, criticalpoints(g′′(x))...) # How to not need to splat!!!
 getsigns(g′′, criticalpoints(g′′(x))) # How to not need to splat!!!
 getsigns(s, criticalpoints(s(x)), domain="[0,∞)")
 getsigns(g, criticalpoints(g(x)))
+# ERROR ^^^
+
 getsigns(p, ([1], [2]))
+
+# ERROR VVV
 getsigns(c, criticalpoints(c(x))) #ERROR constant function has no critical points
 getsigns(d, criticalpoints(d(x)))
 getsigns(e, criticalpoints(e(x))) #ERROR TypeError("'exp' object is not callable")
+# ERROR ^^^
 
 getsigns(p(x), [-2, 1, 3])
 getsigns(s(x), [0]; domain = "[0, oo)")
 getsigns(s(x), [0]; domain = "[0, ∞)")
+
+# ERROR VVV
 getsigns(g(x), criticalpoints(g(x))..., domain="(.1, ∞)")
 getsigns(g′′(x), criticalpoints(g′′(x))...) # How to not need to splat!!!
 getsigns(g′′(x), criticalpoints(g′′(x))) # How to not need to splat!!!
 getsigns(s(x), criticalpoints(s(x)), domain="[0,∞)")
 getsigns(g(x), criticalpoints(g(x)))
+# ERROR ^^^
+
 getsigns(p(x), ([1], [2]))
+
+# ERROR VVV
 getsigns(c(x), criticalpoints(c(x))) #ERROR constant function has no critical points
 getsigns(d(x), criticalpoints(d(x)))
 getsigns(e(x), criticalpoints(e(x))) #ERROR TypeError("'exp' object is not callable")
+# ERROR ^^^
 
 # Test ###################################################
 signchart(c(x), label = "c")
@@ -195,8 +215,11 @@ signchart(dcm(x), label = "dcm")
 
 # Test ###################################################
 signchart(d(x), label = "d")
+
+#ERROR
 dp = diff(d(x))
 signchart(dp(x), label = "dp")
+
 signchart(p(x), xrange = (-4, 5))
 signchart(p(x), domain = "[-4, 5)")
 
@@ -220,7 +243,10 @@ signcharts(p(x))
 signcharts(p(x), xrange = (-4, 5))
 signcharts(q(x); labels="q")
 signcharts(l(x), domain = ldomain)
+
+#ERROR
 signcharts(d(x))
+
 signcharts(s(x), domain = "[0,oo)")
 signcharts(s(x), domain = "[0,oo)", xrange = (-.25, 2))
 signcharts(p(x), domain = "(-oo,oo)")
@@ -230,24 +256,46 @@ signcharts(g(x); imageFormat = :pdf)
 signcharts(g(x); imageFormat = :png)
 signcharts(g(x); imageFormat = :ps)
 
-signcharts(d(x))
+
 
 # Test ###################################################
+# ERROR: MethodError: objects of type Int64 are not callable
+functionplot(c(x), (-5, 5); domain = "[-5, 5]")
+
+functionplot(d(x), (-5, 5))
+functionplot(d(x), (-10, 10); domain = "[-5, 5]")
+functionplot(d(x), (-10, 10); domain = "(-5, 5]")
+functionplot(d(x), (-10, 10); domain = "[-5, 5)")
+functionplot(d(x), (-10, 10); domain = "(-5, 5)")
+functionplot(f(x), (-5, 5))
+functionplot(g(x), (-5, 5))
+functionplot(g(x), (-1, 3))
+functionplot(g′(x), (0, 2); yrange = (-10, 1), vert_ticks = -10:1)
+
+# ERROR: DivideError: integer division error
+functionplot(g′′(x), (-1, 3))
+
+functionplot(p(x), (-5, 5))
+functionplot(r(x), (-5, -1))
+functionplot(r1(x), (-1,4); yrange = (-10, 10), vert_ticks = -10:10)
+functionplot(r1(x), (-1,4); domain = "(-2,5)", yrange = (-10, 10), vert_ticks = -10:10) #check if xrange and domain agree and if not how to handle
+functionplot(s(x), (0,9); domain = sdomain)
+functionplot(s(x), (-1,9); domain = sdomain) #compare xrange with domain and make sure it is no bigger
+functionplot(q(x), (1,3))
+functionplot(l(x), (-1,5); domain = ldomain)
+
 functionplot(t(x), (0, 2π))
 functionplot(t(x), (0, 2π); domain = "(0, 6.28)")
 functionplot(t(x), (0, 2π); domain = "(0, 6.28]")
 functionplot(t(x), (0, 2π); domain = "[0, 6.28)")
 functionplot(t(x), (0, 2π); domain = "[0, 6.28]")
-functionplot(q(x), (1,3))
-functionplot(r(x), (-4,-1); horiz_ticks = -4:.5:-1, size=(1000, 1000))
-functionplot(r1(x), (-1,4); yrange = (-10, 10), vert_ticks = -10:10)
-functionplot(r1(x), (-1,4); domain = "(-2,5)", yrange = (-10, 10), vert_ticks = -10:10) #check if xrange and domain agree and if not how to handle
-functionplot(s(x), (0,9); domain = sdomain)
-functionplot(s(x), (-1,9); domain = sdomain) #compare xrange with domain and make sure it is no bigger
-functionplot(d(x), (-10, 10); domain = "[-5, 5]")
-functionplot(d(x), (-10, 10); domain = "(-5, 5]")
-functionplot(d(x), (-10, 10); domain = "[-5, 5)")
-functionplot(d(x), (-10, 10); domain = "(-5, 5)")
+functionplot(u(x), (-1,3))
+functionplot(e(x), (-5,5))
+
+# ERROR
+functionplot(a(x), (-5,5))
+
+
 
 # Test ###################################################
 plot_function_sign_chart(p(x), (-4, 5))
@@ -257,20 +305,21 @@ plot_function_sign_chart(s(x), (0,9), domain = "[0, ∞)")
 plot_function_sign_chart(p(x), (-3,4))
 
 # Test ###################################################
-extrema(c)
-extrema(d)
-extrema(f)
-extrema(f; domain = "[-2,2]")
-extrema(g)
-extrema(g, domain = "(0, ∞)")
-extrema(g, domain = "(0, 5)")
-extrema(p)
-extrema(r)
-extrema(s, domain = "[0, ∞)") # Needs to check endpoint!
-extrema(q)
-extrema(l, domain = "(0, ∞)")
-extrema(t)
-extrema(t, domain = "(-∞, $(2π)]")
+# Some ERRORS
+# extrema(c)
+# extrema(d)
+# extrema(f)
+# extrema(f; domain = "[-2,2]")
+# extrema(g)
+# extrema(g, domain = "(0, ∞)")
+# extrema(g, domain = "(0, 5)")
+# extrema(p)
+# extrema(r)
+# extrema(s, domain = "[0, ∞)") # Needs to check endpoint!
+# extrema(q)
+# extrema(l, domain = "(0, ∞)")
+# extrema(t)
+# extrema(t, domain = "(-∞, $(2π)]")
 
 extrema(c(x))
 extrema(d(x))
@@ -291,14 +340,18 @@ inflection_points(c(x))
 inflection_points(p(x))
 inflection_points(t(x))
 
-inflection_points(c) # kills solve in criticalpoints function
-inflection_points(p)
-inflection_points(t)
+# ERRORS
+# inflection_points(c) # kills solve in criticalpoints function
+# inflection_points(p)
+# inflection_points(t)
 
 # Test ###################################################
 fsum = function_summary(c(x))
 fsum.signcharts
+
+# ERRORS
 function_summary(d(x))
+
 function_summary(f(x))
 function_summary(g(x))
 function_summary(p(x))
@@ -316,20 +369,37 @@ function_summary(t(x), domain = "(-∞, 6.283185307179586]")
 # function_summary(t(x), domain = "[0, 2π]")
 # function_summary(t(x), domain = "(-∞, 2π]") #ERROR with convert_to_interval, it can't handle π
 
-function_summary(c) #ERROR in call to inflection_points which calls criticalpoints which calls solve and that breaks
-function_summary(d)
-function_summary(f)
-function_summary(g)
-function_summary(p)
-function_summary(r)
-function_summary(r1)
-function_summary(s, domain = sdomain)
-function_summary(q)
-function_summary(l, domain = ldomain)
-function_summary(t)
+# ERRORS
+# function_summary(c) #ERROR in call to inflection_points which calls criticalpoints which calls solve and that breaks
+# function_summary(d)
+# function_summary(f)
+# function_summary(g)
+# function_summary(p)
+# function_summary(r)
+# function_summary(r1)
+# function_summary(s, domain = sdomain)
+# function_summary(q)
+# function_summary(l, domain = ldomain)
+# function_summary(t)
 
 # Test ###################################################
 int(f(x), x)
+
+# Goal to make the output look nice in the terminal
+ans = int(f(x), x)
+println(sympy.latex(ans))
+println(sympy.latex(ans, mode="equation*"))
+
+print(L"%$(sympy.latex(ans))")
+
+lans = sympy.latex(ans)
+mdans = "``" * L"%$lans" * "``" 
+temp = Markdown.parse(raw"\pi")
+tprintln(md"``$temp``")
+
+
+
+
 
 int(f(x), x, 0, 1)
 
