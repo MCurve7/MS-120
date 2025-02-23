@@ -1,9 +1,12 @@
-using Revise
-using LaTeXStrings
-import Term: tprintln
-using Term.TermMarkdown
-using Markdown
-includet("JSUMS120-vscode.jl")
+begin
+	using Revise
+	# using LaTeXStrings
+	# import Term: tprintln
+	# using Term.TermMarkdown
+	# using Markdown
+	includet("JSUMS120-vscode.jl")
+end
+
 
 begin
 	# x = Sym("x")
@@ -37,7 +40,20 @@ begin
 	u(x) = (x+1)/(x-1)
 	e(x) = exp(x)
 	a(x) = abs(x)
+	re(x) = (x-1)^(2//3)
+	rei(x) = 1/(x-1)^(2//3)
 end
+
+# Test ###################################################
+(8)^(1//3)
+(8)^(2//3)
+(-8)^(1//3)
+(-8)^(2//3)
+
+(0.9)^(1//3)
+(0.9)^(2//3)
+(-0.9)^(1//3)
+(-0.9)^(2//3)
 
 # Test ###################################################
 limittable(f, 3, rows = 10)
@@ -48,6 +64,14 @@ limittable(u, 2)
 limittable(e, 1)
 limittable(a, 1)
 limittable(a, -1)
+
+
+
+limittable(re, 1)
+limittable(re, 2)
+
+limittable(rei, 1)
+limittable(rei, 0)
 
 # Test ###################################################
 limittable(f, oo, rows = 10)
@@ -61,20 +85,31 @@ limittable(a, -oo, rows = 10)
 # Test ###################################################
 lim(f, x, 3)
 lim(f, x, oo)
-lim(f(x), x, 3)
-lim(f(x), x, oo)
 lim(1+1/x, x, oo)
-lim(sin(x), x, oo) # TypeError("'sin' object is not callable")
 lim(sin, x, oo)
-lim(e(x), x, oo) # # TypeError("'exp' object is not callable")
 lim(e, x, oo)
 lim(a, x, oo)
 lim(a, x, -oo)
+
+lim(re, x, 1)
+lim(re, x, 2)
+lim(rei,x, 1)
+lim(rei,x, 0) # why complex????
+
+
+lim(f(x), x, 3)
+lim(f(x), x, oo)
+lim(sin(x), x, oo) # TypeError("'sin' object is not callable")
+lim(e(x), x, oo) # # TypeError("'exp' object is not callable")
 
 # typeof(sin(x))
 # typeof(sin)
 # typeof(e(x))
 # typeof(e)
+
+typeof(f)
+typeof(f(x))
+limit(f(x), x=> 2)
 
 # Test ###################################################
 criticalpoints(g(x))
@@ -216,6 +251,15 @@ signchart(dcm(x), label = "dcm")
 # Test ###################################################
 signchart(d(x), label = "d")
 
+signchart(re(x), label = "re")
+signchart(rei(x), label = "rei")
+
+rep = diff(re(x), x)
+rep(2)
+rep(0)
+N(rep(0))
+signchart(rep(x), label = "rep")
+
 #ERROR
 dp = diff(d(x))
 signchart(dp(x), label = "dp")
@@ -244,6 +288,11 @@ signcharts(p(x), xrange = (-4, 5))
 signcharts(q(x); labels="q")
 signcharts(l(x), domain = ldomain)
 
+# CHECK
+signcharts(re(x))
+
+signcharts(rei(x))
+
 #ERROR
 signcharts(d(x))
 
@@ -259,8 +308,16 @@ signcharts(g(x); imageFormat = :ps)
 
 
 # Test ###################################################
-# ERROR: MethodError: objects of type Int64 are not callable
+functionplot(c(x), (-5, 5))
+functionplot(c(x), (-5, 5); domain = "[-1, 1]", widen=0.03)
 functionplot(c(x), (-5, 5); domain = "[-5, 5]")
+functionplot(c(x), (-5, 5); domain = "(-5, 5]")
+functionplot(c(x), (-5, 5); domain = "[-5, 5)")
+functionplot(c(x), (-5, 5); domain = "(-5, 5)")
+functionplot(c(x), (-10, 10); domain = "[-10, 10]", widen=0.2)
+functionplot(c(x), (-5, 5); domain = "[-5, 5]", yrange = (0, 3))
+functionplot(cm(x), (-5, 5); domain = "[-5, 5]")
+
 
 functionplot(d(x), (-5, 5))
 functionplot(d(x), (-10, 10); domain = "[-5, 5]")
@@ -270,9 +327,11 @@ functionplot(d(x), (-10, 10); domain = "(-5, 5)")
 functionplot(f(x), (-5, 5))
 functionplot(g(x), (-5, 5))
 functionplot(g(x), (-1, 3))
+
+#ERROR
 functionplot(g′(x), (0, 2); yrange = (-10, 1), vert_ticks = -10:1)
 
-# ERROR: DivideError: integer division error
+# ERROR
 functionplot(g′′(x), (-1, 3))
 
 functionplot(p(x), (-5, 5))
@@ -295,6 +354,9 @@ functionplot(e(x), (-5,5))
 # ERROR
 functionplot(a(x), (-5,5))
 
+functionplot(re(x), (-1,3))
+functionplot(rei(x), (-1,3))
+
 
 
 # Test ###################################################
@@ -303,6 +365,11 @@ plot_function_sign_chart(f(x), (-2,2))
 plot_function_sign_chart(g(x), (-1,4), yrange = (-10, 10))
 plot_function_sign_chart(s(x), (0,9), domain = "[0, ∞)")
 plot_function_sign_chart(p(x), (-3,4))
+
+# Sign charts y' and y'' are wrong 
+plot_function_sign_chart(re(x), (-1,3))
+
+plot_function_sign_chart(rei(x), (-1,3))
 
 # Test ###################################################
 # Some ERRORS
@@ -394,10 +461,10 @@ print(L"%$(sympy.latex(ans))")
 
 lans = sympy.latex(ans)
 mdans = "``" * L"%$lans" * "``" 
-temp = Markdown.parse(raw"\pi")
-tprintln(md"``$temp``")
+temp = Markdown.parse(raw"\frac{x^{3}}{3}")
+tprintln(md"$mdans")
 
-
+println(L"x^3")
 
 
 

@@ -24,6 +24,9 @@ begin
 end
 
 ###############################################################################################################################
+# Need to gather all import statements here
+
+###############################################################################################################################
 begin
 	#summary code
 	abstract type Interval end
@@ -64,7 +67,7 @@ end
 import Base: diff
 
 """
-diff(f::Function)
+	diff(f::Function)
 
 Extends SymPy's diff function to accept type Function in addtition to type Sym
 """
@@ -73,13 +76,44 @@ function diff(f::Function)
 end
 
 """
-diff(a::Real)
+	diff(a::Real)
 
 Extends SymPy's diff function to accept constants and return the constant function y = 0
 """
 function diff(a::Real)
 	x -> 0
 end
+
+
+import Base: ^
+
+"""
+	function ^(x::Number, y::Rational)
+
+Extends the exponent function so that when passed a rational exponent it returns the real root.
+An alternate version was needed for the AbstractFloat base case.
+"""
+function ^(x::Number, y::Rational)
+	signum = sign(x)
+	num = numerator(y)
+	nroot = Float64(1/denominator(y)) # I don't like this variable name
+	root = Complex(x)^nroot
+	(signum*abs(root))^num
+end
+"""
+	function ^(x::AbstractFloat, y::Rational)
+
+Extends the exponent function so that when passed a rational exponent it returns the real root.
+An alternate version was needed for the Number base case.
+"""
+function ^(x::AbstractFloat, y::Rational)
+	signum = sign(x)
+	num = numerator(y)
+	nroot = Float64(1/denominator(y)) # I don't like this variable name
+	root = Complex(x)^nroot
+	(signum*abs(root))^num
+end
+
 
 ###############################################################################################################################
 """
@@ -121,6 +155,7 @@ function limittable(f, a; rows::Int=5, dir::String="", format="%10.8f", colors =
         Xl = a .- [10.0^(-i) for i in 1:rows-2]
         Xl = vcat([a - 1, a - 0.5], Xl)
         Yl = [N(f(z)) for z in Xl]
+        # Yl = [N(f(Complex(z))) for z in Xl]
 		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
 		hl_right = Highlighter(f =(data, i, j) -> (j == 4) , crayon = crayon_color_right)
 		pretty_table(hcat(Xl, Yl, Xr, Yr), header = ["x → $(a)⁻", "y", "x → $(a)⁺", "y"], formatters = ft_printf(format), highlighters = (hl_left, hl_right))
@@ -187,7 +222,7 @@ end
 # end
 
 """
-    lim(f(x), var, c; dir = "")
+    lim(f, var, c; dir = "")
 
 ``\\lim_{x \\to c} f(x) = L``\n
 var: the variable\n
@@ -210,6 +245,36 @@ function lim(f, var, c; dir = "")
 	else
 		missing
 	end
+end
+
+"""
+    lim(f(x), var, c; dir = "")
+
+``\\lim_{x \\to c} f(x) = L``\n
+var: the variable\n
+c: the value to approach including -∞ (-oo) and ∞ (oo)\n
+dir: a string indicating which side to take the limit from. Default is "" which takes the two sided limit, "+" takes the limit from the right, "-" takes the limit from the left
+"""
+function lim(f::Sym{PyObject}, var, c; dir = "")
+    # lhl = limit(f, var, c, dir="-") # This works in Pluto
+    # rhl = limit(f, var, c, dir="+") # This works in Pluto
+	lhl = limit(f, var => c, dir="-") # This works in VS Code
+    rhl = limit(f, var => c, dir="+") # This works in VS Code
+	if lhl.is_number && rhl.is_number
+		if dir == ""
+			rhl == lhl ? rhl : missing # if rhl and lhl are the same return rhl, else return missing
+		elseif dir == "+"
+			rhl
+		else
+			lhl
+		end
+	else
+		missing
+	end
+end
+
+function lim(a::Number, var, c; dir = "")
+    a
 end
 
 ###############################################################################################################################
@@ -861,7 +926,7 @@ function signcharts(a::T; labels="y", domain = "(-oo, oo)", horiz_jog = 0.2, siz
 	Plots.plot(f_sc, fp_sc, fpp_sc, layout = (3,1))
 end
 
-# ###############################################################################################################################
+###############################################################################################################################
 # """
 # functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
 
@@ -987,6 +1052,155 @@ end
 # end
 
 # Updated 2025/02/18
+# """
+# 	functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
+
+# Required:\n
+# f(x): the function to be ploted
+# xrange: a pair giving the ``x`` limits of the plot\n
+# Optional:\n
+# label: a string usually the name of the function\n
+# domain: an interval whritten as a string, e.g. "(-∞, 10]". It overrides xrange.\n
+# horiz_ticks: a range giving the horizontal ticks to be displayed\n
+# vert_ticks: a range giving the horizontal ticks to be displayed\n
+# yrange: a pair giving the ``y`` limits of the plot\n
+# xsteps: the step size for the ``x`` values (`xrange[1]:xsteps:xrange[2]`). Defaults to 0.01.\n
+# size: size of the graph as an ordered pair. Defaults to (1000, 500)\n
+# imageFormat: Only :svg and :png have any effect for now. Choices are :pdf, :png, :ps, :svg.\n
+# tickfontsize: \n
+# marksize: \n
+# """
+# function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
+#     #imageFormat can be :svg, :png, ... MAKE save image option for pdf and ps?
+# 	# Need to check if any holes coincide with the ends of the domain and adjust graph if necessary e.g. hole at x = 2 and domain = [2, 5] needs open dot
+# 	# Having problems when hole and domain endpoint coinciding.
+
+# 	# println("f=$f")
+# 	crpt_num, crpt_denom, crpt_hole = criticalpoints(f)
+# 	println("crpt_num=$crpt_num, crpt_denom=$crpt_denom, crpt_hole=$crpt_hole")
+# 	asymptote_vert = setdiff(crpt_denom, crpt_hole)
+
+#     #p = plot(values, f, legend = :outertopright, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat)
+# 	interval = convert_to_interval(domain)
+# 	# if xrange is bigger than the domain reset to the size of the domain
+# 	xrange_left, xrange_right = xrange
+	
+# 	#Have the xrange agree with the domain when the domain is smaller
+# 	xrange_left = xrange[1] < interval.left ? interval.left : xrange[1]
+# 	xrange_right = interval.right < xrange[2] ? interval.right : xrange[2]
+# 	xrange = (xrange_left, xrange_right)
+	
+# 	# Set the values to evaluate the function at.
+# 	values = xrange[1]:xsteps:xrange[2]
+# 	if ismissing(horiz_ticks)
+# 		horiz_ticks = xrange[1]:xrange[2]
+# 	end
+	
+# 	p = Plots.plot(values, f, legend = false, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat, size=size, tickfontsize=tickfontsize)
+# 	if !ismissing(yrange)
+# 		p = Plots.plot!(ylim = yrange)
+# 	end
+# 	if !ismissing(vert_ticks) 
+# 		p = Plots.plot!(yticks=vert_ticks)
+# 	end
+    
+# 	p = yaxis!(label, yguidefontsize=18)
+#     #Draw vertical asymptotes if they exist
+#     # asymptote_vert = solve(simplify(1/f))
+# 	# filter!(e->isa(e, Real),asymptote_vert) # Was getting complex values and this removes them
+#     if length(asymptote_vert) != 0
+#         p = vline!(asymptote_vert, line = :dash)
+#     end
+#     #Determine if function goes to infinity on the left and right
+# 	lf_lim = lim(f, x, -oo)
+#     if ismissing(lf_lim) || (lf_lim == -oo || lf_lim == oo || lf_lim == -oo*1im || lf_lim == oo*1im) # why did I need oo*1im?
+#         lf_infty_bool = true
+#     else
+#         lf_infty_bool = false
+#     end
+# 	rt_lim = lim(f, x, oo)
+#     if ismissing(rt_lim) || (rt_lim == -oo || rt_lim == oo || rt_lim == -oo*1im || rt_lim == oo*1im)
+#         rt_infty_bool = true
+#     else
+#         rt_infty_bool = false
+#     end
+	
+#     if !lf_infty_bool && !rt_infty_bool
+# 		# Draw horizontal asymptote
+#         if lf_lim == rt_lim && lf_lim.is_number && rt_lim.is_number
+#             p = hline!([lf_lim], line = :dash)
+#         else
+# 			if lf_lim.is_number
+#             	p = hline!([lf_lim], line = :dash)
+# 			elseif rt_lim.is_number
+#             	p = hline!([rt_lim],  line = :dash)
+# 			end
+#         end
+#     elseif !lf_infty_bool && lf_lim.is_number
+#         p = hline!([lf_lim], line = :dash)
+#     elseif !rt_infty_bool && rt_lim.is_number
+#         p = hline!([rt_lim],  line = :dash)
+#     end
+	
+# 	#Draw any holes that exists
+# 	if !isempty(crpt_hole)
+# 		# println("I see holes")
+# 		y_holes = []
+# 		for c in crpt_hole
+# 			if xrange[1] < c < xrange[2]
+# 				push!(y_holes, lim(f, x, c))
+# 			end
+# 		end
+# 		p = Plots.plot!(crpt_hole, y_holes, seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 	end
+
+# 	# if either end of the domain is finite ifnd the end point and plot it.
+# 	left_endpoint_value = missing
+# 	right_endpoint_value = missing
+# 	if interval.left != -∞
+# 		left_endpoint_value = f(interval.left)
+# 	end
+# 	if interval.right != ∞
+# 		right_endpoint_value = f(interval.right)
+# 	end
+# 	if typeof(interval) == OpenOpenInterval
+# 		# println("OpenOpenInterval")
+# 		if !ismissing(left_endpoint_value)
+# 			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 		end
+# 		if !ismissing(right_endpoint_value)
+# 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 		end
+# 	elseif typeof(interval) == OpenClosedInterval
+# 		# println("OpenClosedInterval")
+# 		if !ismissing(left_endpoint_value)
+# 			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 		end
+# 		if !ismissing(right_endpoint_value)
+# 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+# 		end
+# 	elseif typeof(interval) == ClosedOpenInterval
+# 		# println("ClosedOpenInterval")
+# 		if !ismissing(left_endpoint_value)
+# 			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+# 		end
+# 		if !ismissing(right_endpoint_value)
+# 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+# 		end
+# 	else
+# 		# println("ClosedClosedInterval")
+# 		if !ismissing(left_endpoint_value)
+# 			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+# 		end
+# 		if !ismissing(right_endpoint_value)
+# 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+# 		end
+# 	end
+
+#     p
+# end
+
+# 02/22/2025
 """
 	functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
 
@@ -1005,17 +1219,16 @@ imageFormat: Only :svg and :png have any effect for now. Choices are :pdf, :png,
 tickfontsize: \n
 marksize: \n
 """
-function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
+function functionplot(f::T, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8) where {T <: Union{Function, Sym}}
     #imageFormat can be :svg, :png, ... MAKE save image option for pdf and ps?
 	# Need to check if any holes coincide with the ends of the domain and adjust graph if necessary e.g. hole at x = 2 and domain = [2, 5] needs open dot
 	# Having problems when hole and domain endpoint coinciding.
 
-	# println("f=$f")
 	crpt_num, crpt_denom, crpt_hole = criticalpoints(f)
 	# println("crpt_num=$crpt_num, crpt_denom=$crpt_denom, crpt_hole=$crpt_hole")
 	asymptote_vert = setdiff(crpt_denom, crpt_hole)
 
-    #p = plot(values, f, legend = :outertopright, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat)
+	#p = plot(values, f, legend = :outertopright, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat)
 	interval = convert_to_interval(domain)
 	# if xrange is bigger than the domain reset to the size of the domain
 	xrange_left, xrange_right = xrange
@@ -1038,44 +1251,44 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
 	if !ismissing(vert_ticks) 
 		p = Plots.plot!(yticks=vert_ticks)
 	end
-    
-	p = yaxis!(label, yguidefontsize=18)
-    #Draw vertical asymptotes if they exist
-    # asymptote_vert = solve(simplify(1/f))
-	# filter!(e->isa(e, Real),asymptote_vert) # Was getting complex values and this removes them
-    if length(asymptote_vert) != 0
-        p = vline!(asymptote_vert, line = :dash)
-    end
-    #Determine if function goes to infinity on the left and right
-	lf_lim = lim(f, x, -oo)
-    if ismissing(lf_lim) || (lf_lim == -oo || lf_lim == oo || lf_lim == -oo*1im || lf_lim == oo*1im) # why did I need oo*1im?
-        lf_infty_bool = true
-    else
-        lf_infty_bool = false
-    end
-	rt_lim = lim(f, x, oo)
-    if ismissing(rt_lim) || (rt_lim == -oo || rt_lim == oo || rt_lim == -oo*1im || rt_lim == oo*1im)
-        rt_infty_bool = true
-    else
-        rt_infty_bool = false
-    end
 	
-    if !lf_infty_bool && !rt_infty_bool
+	p = yaxis!(label, yguidefontsize=18)
+	#Draw vertical asymptotes if they exist
+	# asymptote_vert = solve(simplify(1/f))
+	# filter!(e->isa(e, Real),asymptote_vert) # Was getting complex values and this removes them
+	if length(asymptote_vert) != 0
+		p = vline!(asymptote_vert, line = :dash)
+	end
+	#Determine if function goes to infinity on the left and right
+	lf_lim = lim(f, x, -oo)
+	if ismissing(lf_lim) || (lf_lim == -oo || lf_lim == oo || lf_lim == -oo*1im || lf_lim == oo*1im) # why did I need oo*1im?
+		lf_infty_bool = true
+	else
+		lf_infty_bool = false
+	end
+	rt_lim = lim(f, x, oo)
+	if ismissing(rt_lim) || (rt_lim == -oo || rt_lim == oo || rt_lim == -oo*1im || rt_lim == oo*1im)
+		rt_infty_bool = true
+	else
+		rt_infty_bool = false
+	end
+	
+	if !lf_infty_bool && !rt_infty_bool
 		# Draw horizontal asymptote
-        if lf_lim == rt_lim && lf_lim.is_number && rt_lim.is_number
-            p = hline!([lf_lim], line = :dash)
-        else
+		if lf_lim == rt_lim && lf_lim.is_number && rt_lim.is_number
+			p = hline!([lf_lim], line = :dash)
+		else
 			if lf_lim.is_number
-            	p = hline!([lf_lim], line = :dash)
+				p = hline!([lf_lim], line = :dash)
 			elseif rt_lim.is_number
-            	p = hline!([rt_lim],  line = :dash)
+				p = hline!([rt_lim],  line = :dash)
 			end
-        end
-    elseif !lf_infty_bool && lf_lim.is_number
-        p = hline!([lf_lim], line = :dash)
-    elseif !rt_infty_bool && rt_lim.is_number
-        p = hline!([rt_lim],  line = :dash)
-    end
+		end
+	elseif !lf_infty_bool && lf_lim.is_number
+		p = hline!([lf_lim], line = :dash)
+	elseif !rt_infty_bool && rt_lim.is_number
+		p = hline!([rt_lim],  line = :dash)
+	end
 	
 	#Draw any holes that exists
 	if !isempty(crpt_hole)
@@ -1089,7 +1302,7 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
 		p = Plots.plot!(crpt_hole, y_holes, seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
 	end
 
-	# if either end of the domain is finite ifnd the end point and plot it.
+	# if either end of the domain is finite find the end point and plot it.
 	left_endpoint_value = missing
 	right_endpoint_value = missing
 	if interval.left != -∞
@@ -1131,8 +1344,118 @@ function functionplot(f, xrange; label = "", domain = "(-oo, oo)", horiz_ticks =
 			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
 		end
 	end
+	p
+end
 
-    p
+# 2025/02/19
+"""
+	functionplot(a::Number, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8, widen = 0.1)
+
+Required:\n
+a: the constant function to be ploted\n
+xrange: a pair giving the ``x`` limits of the plot\n
+Optional:\n
+label: a string usually the name of the function\n
+domain: an interval whritten as a string, e.g. "(-∞, 10]". It overrides xrange.\n
+horiz_ticks: a range giving the horizontal ticks to be displayed\n
+vert_ticks: a range giving the horizontal ticks to be displayed\n
+yrange: a pair giving the ``y`` limits of the plot\n
+size: size of the graph as an ordered pair. Defaults to (1000, 500)\n
+imageFormat: Only :svg and :png have any effect for now. Choices are :pdf, :png, :ps, :svg.\n
+tickfontsize: \n
+marksize: \n
+widen: if the domain is finite the graph may not be wide enough to see the endpoint markers, this widens the x-axis to make them visiable. Defaults to 0.1\n
+"""
+function functionplot(a::Number, xrange; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8, widen = 0.1)
+	interval = convert_to_interval(domain)
+	# if xrange is bigger than the domain reset to the size of the domain
+	xrange_left, xrange_right = xrange
+	
+	#Have the xrange agree with the domain when the domain is smaller
+	xrange_left = xrange[1] < interval.left ? interval.left : xrange[1]
+	xrange_right = interval.right < xrange[2] ? interval.right : xrange[2]
+	xrange = (xrange_left, xrange_right)
+	
+	if ismissing(horiz_ticks)
+		horiz_ticks = xrange[1]:xrange[2]
+	end
+
+	# draw hline!([a])
+	# p = Plots.plot(values, a, legend = false, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat, size=size, tickfontsize=tickfontsize)
+	# if !ismissing(yrange)
+	# 	p = Plots.plot!(ylim = yrange)
+	# end
+	# if !ismissing(vert_ticks) 
+	# 	p = Plots.plot!(yticks=vert_ticks)
+	# end
+
+	if ismissing(yrange)
+		if a >= 0
+			yend = a+1
+			yrange = (0, yend)
+		else
+			yend = a-1
+			yrange = (yend, 0)
+		end
+	end
+
+	# Need to automate: widen the x axis enouth that endpoints don't get cut off
+	# it needs to adjust as xrange_right-xrange_left changes
+	# wide = xrange_right-xrange_left
+	# p = plot(xlims = (xrange_left-1/wide, xrange_right+1/wide), legend = false, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat, size=size, tickfontsize=tickfontsize)
+	p = plot(xlims = (xrange_left-widen, xrange_right+widen), legend = false, framestyle = :origin, xticks=horiz_ticks, fmt = imageFormat, size=size, tickfontsize=tickfontsize)
+	p = yaxis!(label, yguidefontsize=18)
+	if !ismissing(vert_ticks) 
+		p = Plots.plot!(yticks=vert_ticks)
+	end
+	p = Plots.plot!(ylim = yrange)
+	p = hline!([a])
+
+	p = yaxis!(label, yguidefontsize=18)
+
+	# if either end of the domain is finite find the end point and plot it.
+	left_endpoint_value = missing
+	right_endpoint_value = missing
+	if interval.left != -∞
+		left_endpoint_value = a
+	end
+	if interval.right != ∞
+		right_endpoint_value = a
+	end
+	if typeof(interval) == OpenOpenInterval
+		# println("OpenOpenInterval")
+		if !ismissing(left_endpoint_value)
+			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+		end
+		if !ismissing(right_endpoint_value)
+			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+		end
+	elseif typeof(interval) == OpenClosedInterval
+		# println("OpenClosedInterval")
+		if !ismissing(left_endpoint_value)
+			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+		end
+		if !ismissing(right_endpoint_value)
+			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+		end
+	elseif typeof(interval) == ClosedOpenInterval
+		# println("ClosedOpenInterval")
+		if !ismissing(left_endpoint_value)
+			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+		end
+		if !ismissing(right_endpoint_value)
+			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :white, markersize = marksize) # open dots
+		end
+	else
+		# println("ClosedClosedInterval")
+		if !ismissing(left_endpoint_value)
+			p = Plots.plot!([interval.left], [left_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+		end
+		if !ismissing(right_endpoint_value)
+			p = Plots.plot!([interval.right], [right_endpoint_value], seriestype = :scatter, markercolor = :black, markersize = marksize) #closed dots?
+		end
+	end
+	p
 end
 
 ###############################################################################################################################
