@@ -236,15 +236,19 @@ function lim(f, var, c; dir = "")
     rhl = limit(f(x), var => c, dir="+") # This works in VS Code
 	if lhl.is_number && rhl.is_number
 		if dir == ""
-			rhl == lhl ? rhl : missing # if rhl and lhl are the same return rhl, else return missing
+			ans = rhl == lhl ? rhl : missing # if rhl and lhl are the same return rhl, else return missing
 		elseif dir == "+"
-			rhl
+			ans = rhl
 		else
-			lhl
+			ans = lhl
 		end
 	else
-		missing
+		ans = missing
 	end
+	if ismissing(ans)
+		println("Check if the limit is Undefined")
+	end
+	ans
 end
 
 """

@@ -107,9 +107,9 @@ lim(e(x), x, oo) # # TypeError("'exp' object is not callable")
 # typeof(e(x))
 # typeof(e)
 
-typeof(f)
-typeof(f(x))
-limit(f(x), x=> 2)
+# typeof(f)
+# typeof(f(x))
+# limit(f(x), x=> 2)
 
 # Test ###################################################
 criticalpoints(g(x))
