@@ -1,5 +1,6 @@
 begin
 	using Revise
+	using BenchmarkTools
 	# using LaTeXStrings
 	# import Term: tprintln
 	# using Term.TermMarkdown
@@ -468,7 +469,263 @@ println(L"x^3")
 
 
 
+
+
+
+# Test ###################################################
+# Test functions #####################################
+begin
+	c(x) = 2
+	cm(x) = -2
+	d(x) = 2x
+	f(x) = x^2
+	g(x) = x/(x-1)
+	g′ = diff(g(x))
+	g′′ = diff(g′(x))
+	p(x) = (x+2)*(x-1)*(x-3)
+	r(x) = 1/(x+3)
+	r1(x) = 1/(x-2)+1
+	s(x) = sqrt(x)
+	sdomain = "[0, ∞)"
+	q(x) = (x-1.5)*(x-2.3)
+	l(x) = log(x)
+	ldomain = "(0, ∞)"
+	t(x) = sin(x)
+	u(x) = (x+1)/(x-1)
+	e(x) = exp(x)
+	a(x) = abs(x)
+	re(x) = (x-1)^(2//3)
+	rei(x) = 1/(x-1)^(2//3)
+end
+
+@benchmark is_constant_function(c)
+@benchmark is_constant_function(f)
+@benchmark is_constant_function(s; a=0)
+
+is_constant_function(c)
+is_constant_function(cm)
+is_constant_function(d)
+is_constant_function(f)
+is_constant_function(g)
+is_constant_function(g′)
+is_constant_function(g′′)
+is_constant_function(p)
+is_constant_function(r)
+is_constant_function(r1)
+is_constant_function(s; a=0)
+is_constant_function(q)
+is_constant_function(l; a=0.0001)
+is_constant_function(t)
+is_constant_function(u)
+is_constant_function(e)
+is_constant_function(a)
+is_constant_function(re)
+is_constant_function(rei)
+
+int(2, x, 0, 2)
 int(f(x), x, 0, 1)
+
+int(c, x, 0, 2)
+int(cm, x, 0, 2)
+int(d, x, 0, 2)
+int(f, x, 0, 2)
+int(g, x, 1.1, 2)
+int(g′, x, 0, 2)
+int(g′′, x, 0, 2)
+int(p, x, 0, 2)
+int(r, x, 0, 2)
+int(r1, x, 0, 2)
+int(s, x, 0, 2)
+int(q, x, 0, 2)
+int(l, x, 0, 2)
+int(t, x, 0, 2)
+int(u, x, 0, 2)
+int(e, x, 0, 2)
+int(a, x, 0, 2)
+int(re, x, 0, 2)
+int(rei, x, 0, 2)
+
+int(c, x, 0, 2)
+Riemann_sum(c, 0, 2, 4)
+Riemann_sum(c, 0, 2, 4; rule = :left)
+Riemann_sum(c, 0, 2, 4; rule = :center)
+Riemann_sum(c, 0, 2, 4; rule = :Darboux_lower)
+Riemann_sum(c, 0, 2, 4; rule = :Darboux_upper)
+
+int(cm, x, 0, 2)
+Riemann_sum(cm, 0, 2, 4)
+Riemann_sum(cm, 0, 2, 4; rule = :left)
+Riemann_sum(cm, 0, 2, 4; rule = :center)
+Riemann_sum(cm, 0, 2, 4; rule = :Darboux_lower)
+Riemann_sum(cm, 0, 2, 4; rule = :Darboux_upper)
+
+int(d, x, 0, 2)
+Riemann_sum(d, 0, 2, 100)
+Riemann_sum(d, 0, 2, 100; rule = :left)
+Riemann_sum(d, 0, 2, 100; rule = :center)
+Riemann_sum(d, 0, 2, 100; rule = :Darboux_lower)
+Riemann_sum(d, 0, 2, 100; rule = :Darboux_upper)
+
+int(f, x, 0, 2)
+Riemann_sum(f, 0, 2, 100)
+Riemann_sum(f, 0, 2, 100; rule = :left)
+Riemann_sum(f, 0, 2, 100; rule = :center)
+Riemann_sum(f, 0, 2, 100; rule = :Darboux_lower)
+Riemann_sum(f, 0, 2, 100; rule = :Darboux_upper)
+
+int(g, x, 1, 2)
+Riemann_sum(g, 1, 3, 4)
+Riemann_sum(g, 1, 3, 4; rule = :left)
+Riemann_sum(g, 1, 3, 4; rule = :center)
+Riemann_sum(g, 1, 3, 4; rule = :Darboux_lower)
+Riemann_sum(g, 1, 3, 4; rule = :Darboux_upper)
+j=int(g, x, 1.5, 3)
+Float64(j)
+Riemann_sum(g, 1.5, 3, 10000)
+Riemann_sum(g, 1.5, 3, 10000; rule = :left)
+Riemann_sum(g, 1.5, 3, 10000; rule = :center)
+Riemann_sum(g, 1.5, 3, 10000; rule = :Darboux_lower)
+Riemann_sum(g, 1.5, 3, 10000; rule = :Darboux_upper)
+
+int(g′, x, 1, 4)
+Riemann_sum(g′, 1, 3, 4)
+Riemann_sum(g′, 1, 3, 4; rule = :left)
+Riemann_sum(g′, 1, 3, 4; rule = :center)
+Riemann_sum(g′, 1, 3, 4; rule = :Darboux_lower)
+Riemann_sum(g′, 1, 3, 4; rule = :Darboux_upper)
+int(g′, x, 2, 3)
+Riemann_sum(g′, 2, 3, 1000)
+Riemann_sum(g′, 2, 3, 1000; rule = :left)
+Riemann_sum(g′, 2, 3, 1000; rule = :center)
+Riemann_sum(g′, 2, 3, 100; rule = :Darboux_lower)
+Riemann_sum(g′, 2, 3, 100; rule = :Darboux_upper)
+
+int(p, x, -3, 4)
+Float64(int(p, x, -3, 4))
+Riemann_sum(p, -3, 4, 1000)
+Riemann_sum(p, -3, 4, 1000; rule = :left)
+Riemann_sum(p, -3, 4, 1000; rule = :center)
+Riemann_sum(p, -3, 4, 1000; rule = :Darboux_lower)
+Riemann_sum(p, -3, 4, 1000; rule = :Darboux_upper)
+
+int(r, x, 0, 2)
+Float64(int(r, x, 0, 2))
+Riemann_sum(r, 0, 2, 1000)
+Riemann_sum(r, 0, 2, 1000; rule = :left)
+Riemann_sum(r, 0, 2, 1000; rule = :center)
+Riemann_sum(r, 0, 2, 1000; rule = :Darboux_lower)
+Riemann_sum(r, 0, 2, 1000; rule = :Darboux_upper)
+
+int(r1, x, 2, 4)
+Riemann_sum(r1, 2, 4, 4)
+Riemann_sum(r1, 2, 4, 4; rule = :left)
+Riemann_sum(r1, 2, 4, 4; rule = :center)
+Riemann_sum(r1, 2, 4, 4; rule = :Darboux_lower)
+Riemann_sum(r1, 2, 4, 4; rule = :Darboux_upper)
+int(r1, x, 2.5, 4)
+Float64(int(r1, x, 2.5, 4))
+Riemann_sum(r1, 2.5, 4, 1_000)
+Riemann_sum(r1, 2.5, 4, 1_000; rule = :left)
+Riemann_sum(r1, 2.5, 4, 1_000; rule = :center)
+Riemann_sum(r1, 2.5, 4, 1_000; rule = :Darboux_lower)
+Riemann_sum(r1, 2.5, 4, 1_000; rule = :Darboux_upper)
+
+int(s, x, 0, 2)
+Float64(int(s, x, 0, 2))
+Riemann_sum(s, 0, 2, 4)
+Riemann_sum(s, 0, 2, 4; rule = :left)
+Riemann_sum(s, 0, 2, 4; rule = :center)
+Riemann_sum(s, 0, 2, 4; rule = :Darboux_lower)
+Riemann_sum(s, 0, 2, 4; rule = :Darboux_upper)
+
+int(q, x, 0, 2)
+Riemann_sum(q, 0, 2, 100)
+Riemann_sum(q, 0, 2, 100; rule = :left)
+Riemann_sum(q, 0, 2, 100; rule = :center)
+Riemann_sum(q, 0, 2, 100; rule = :Darboux_lower)
+Riemann_sum(q, 0, 2, 100; rule = :Darboux_upper)
+
+int(l, x, 0, 2)
+Riemann_sum(l, 0, 2, 100)
+Riemann_sum(l, 0, 2, 100; rule = :left)
+Riemann_sum(l, 0, 2, 100; rule = :center)
+Riemann_sum(l, 0, 2, 100; rule = :Darboux_lower)
+Riemann_sum(l, 0, 2, 100; rule = :Darboux_upper)
+int(l, x, 0.5, 2)
+Float64(int(l, x, 0.5, 2))
+Riemann_sum(l, 0.5, 2, 100)
+Riemann_sum(l, 0.5, 2, 100; rule = :left)
+Riemann_sum(l, 0.5, 2, 100; rule = :center)
+Riemann_sum(l, 0.5, 2, 100; rule = :Darboux_lower)
+Riemann_sum(l, 0.5, 2, 100; rule = :Darboux_upper)
+
+int(t, x, 0, 2)
+Float64(int(t, x, 0, 2))
+Riemann_sum(t, 0, 2, 4)
+Riemann_sum(t, 0, 2, 4; rule = :left)
+Riemann_sum(t, 0, 2, 4; rule = :center)
+Riemann_sum(t, 0, 2, 4; rule = :Darboux_lower)
+Riemann_sum(t, 0, 2, 4; rule = :Darboux_upper)
+
+int(u, x, 1, 3)
+Riemann_sum(u, 1, 3, 100)
+Riemann_sum(u, 1, 3, 100; rule = :left)
+Riemann_sum(u, 1, 3, 100; rule = :center)
+Riemann_sum(u, 1, 3, 100; rule = :Darboux_lower)
+Riemann_sum(u, 1, 3, 100; rule = :Darboux_upper)
+int(u, x, 1.5, 3)
+Float64(int(u, x, 1.5, 3))
+Riemann_sum(u, 1.5, 3, 4)
+Riemann_sum(u, 1.5, 3, 4; rule = :left)
+Riemann_sum(u, 1.5, 3, 4; rule = :center)
+Riemann_sum(u, 1.5, 3, 4; rule = :Darboux_lower)
+Riemann_sum(u, 1.5, 3, 4; rule = :Darboux_upper)
+
+int(e, x, 0, 2)
+Float64(int(e, x, 0, 2))
+Riemann_sum(e, 0, 2, 4)
+Riemann_sum(e, 0, 2, 4; rule = :left)
+Riemann_sum(e, 0, 2, 4; rule = :center)
+Riemann_sum(e, 0, 2, 4; rule = :Darboux_lower)
+Riemann_sum(e, 0, 2, 4; rule = :Darboux_upper)
+
+int(a, x, 0, 2)
+Riemann_sum(a, 0, 2, 4)
+Riemann_sum(a, 0, 2, 4; rule = :left)
+Riemann_sum(a, 0, 2, 4; rule = :center)
+Riemann_sum(a, 0, 2, 4; rule = :Darboux_lower)
+Riemann_sum(a, 0, 2, 4; rule = :Darboux_upper)
+
+int(re, x, 0, 2)
+Riemann_sum(re, 0, 2, 4)
+Riemann_sum(re, 0, 2, 4; rule = :left)
+Riemann_sum(re, 0, 2, 4; rule = :center)
+Riemann_sum(re, 0, 2, 4; rule = :Darboux_lower)
+Riemann_sum(re, 0, 2, 4; rule = :Darboux_upper)
+int(re, x, 1, 2)
+Float64(int(re, x, 1, 2))
+Riemann_sum(re, 1, 2, 4)
+Riemann_sum(re, 1, 2, 4; rule = :left)
+Riemann_sum(re, 1, 2, 4; rule = :center)
+Riemann_sum(re, 1, 2, 4; rule = :Darboux_lower)
+Riemann_sum(re, 1, 2, 4; rule = :Darboux_upper)
+
+int(rei, x, 1, 3)
+Float64(int(rei, x, 1, 3))
+Riemann_sum(rei, 1, 3, 4)
+Riemann_sum(rei, 1, 3, 4; rule = :left)
+Riemann_sum(rei, 1, 3, 4; rule = :center)
+Riemann_sum(rei, 1, 3, 4; rule = :Darboux_lower)
+Riemann_sum(rei, 1, 3, 4; rule = :Darboux_upper)
+int(rei, x, 1.5, 3)
+Float64(int(rei, x, 1.5, 3))
+Riemann_sum(rei, 1.5, 3, 4)
+Riemann_sum(rei, 1.5, 3, 4; rule = :left)
+Riemann_sum(rei, 1.5, 3, 4; rule = :center)
+Riemann_sum(rei, 1.5, 3, 4; rule = :Darboux_lower)
+Riemann_sum(rei, 1.5, 3, 4; rule = :Darboux_upper)
+
+# Riemann_sum(, 0, 2, 4)
 
 # Test ###################################################
 distance((0,0), (1,1))
@@ -478,13 +735,11 @@ distance((0,0), (1,1))
 
 
 
+fs(x) = (x+2)*(x-1)*(x-3)
+golden_section_extrema(fs, -1, -0.5)
+golden_section_extrema(fs, 2, 2.5)
 
-
-
-
-
-
-
+functionplot(fs(x), [-3, 4])
 
 
 

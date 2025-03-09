@@ -8,9 +8,17 @@ using Printf
 using SymPy
 using PyCall
 using Colors
+using OffsetArrays
+using Distributions
 # using PlotlyJS
 
+###############################################################################################################################
+# Need to gather all import statements here and defined constants
+import Base: diff
+import Base: ^
 
+φ = Base.MathConstants.golden
+###############################################################################################################################
 
 begin
 	x = Sym("x")
@@ -23,10 +31,6 @@ begin
 	∞ = oo
 end
 
-###############################################################################################################################
-# Need to gather all import statements here
-
-###############################################################################################################################
 begin
 	#summary code
 	abstract type Interval end
@@ -64,7 +68,7 @@ begin
 end
 
 ###############################################################################################################################
-import Base: diff
+
 
 """
 	diff(f::Function)
@@ -85,7 +89,7 @@ function diff(a::Real)
 end
 
 
-import Base: ^
+
 
 """
 	function ^(x::Number, y::Rational)
@@ -870,7 +874,7 @@ end
 """
 	signcharts(f(x); labels="y", domain = "(-oo, oo)", horiz_jog = 0.2, size=(400, 500), dotverticaljog = 0, marksize = 8, tickfontsize = 20, imageFormat = :svg, xrange = missing)
 
-xrange: sets the limits of the x-axis if given as a pair otherwise automatically uses the critical points to set the limits
+xrange: sets the limits of the ``x``-axis if given as a pair otherwise automatically uses the critical points to set the limits
 
 Generate stacked sign charts for the given function and its first and second derivative. 
 """
@@ -901,7 +905,7 @@ end
 """
 	signcharts(a::T; labels="y", domain = "(-oo, oo)", horiz_jog = 0.2, size=(400, 500), dotverticaljog = 0, marksize = 8, tickfontsize = 20, imageFormat = :svg, xrange = missing) where {T <: Real}
 
-xrange: sets the limits of the x-axis if given as a pair otherwise automatically uses the critical points to set the limits
+xrange: sets the limits of the ``x``-axis if given as a pair otherwise automatically uses the critical points to set the limits
 
 Generate stacked sign charts for the given function and its first and second derivative. 
 """
@@ -1698,8 +1702,8 @@ end
 """
 	inflection_points(f::Union{Function, Sym}; domain::String = "(-∞, ∞)")
 
-Takes a function `f` and  optionally a domain and returns a vector of the critical points in the domain.
-f: Can be entered as `f` or `f(x)`. 
+Takes a function ``f`` and  optionally a domain and returns a vector of the critical points in the domain.
+f: Can be entered as ``f`` or ``f(x)``. 
 domain: the domain of the function entered as a string (default "(-∞, ∞)"),\n
 """
 function inflection_points(f::Union{Function, Sym}; domain::String = "(-∞, ∞)")
@@ -1727,7 +1731,7 @@ end
 """
 inflection_points(a::Int; domain::String = "(-∞, ∞)")
 
-Takes a constant `a` and  optionally a domain and returns an empty vector.
+Takes a constant ``a`` and  optionally a domain and returns an empty vector.
 a: Is an integer.
 domain: the domain of the function entered as a string (default "(-∞, ∞)"),\n
 """
@@ -1844,7 +1848,7 @@ end
 """
     function_summary(f; domain::String = "(-∞, ∞)", labels = "y", fig_width = 200, dotverticaljog=0, marksize=8, tickfontsize = 20, format = :side, format_num="%3.2f", horiz_jog = 0.2, size=(1000, 400), imageFormat = :svg, xrange = missing)
 
-Takes a function f and outputs the:\n
+Takes a function ``f`` and outputs the:\n
 y-intercept,\n
 local max,\n
 local min,\n
@@ -1937,7 +1941,7 @@ end
 """
 function_summary(a::Real; domain::String = "(-∞, ∞)", labels = "y", dotverticaljog=0, marksize=8, tickfontsize = 20, digits= 2, horiz_jog = 0.2, size=(1000, 400), imageFormat = :svg, xrange = missing)
 
-Takes a function f and outputs the:\n
+Takes a function ``f`` and outputs the:\n
 y-intercept,\n
 local max,\n
 local min,\n
@@ -1969,24 +1973,192 @@ end
 """
     int(f, var)
 
-Find the indefinite integral of function f wrt to the variable var.
+Find the indefinite integral of function ``f`` wrt to the variable var.
 """
 function int(f, var)
 	integrate(f(x), var)
 end
 
 """
-    int(f, var, a, b)
+    int(c, var, a, b)
 
-Find the definite integral of function f from ``a`` to ``b`` wrt to the variable var. 
+Find the definite integral of the contsant ``c`` from ``a`` to ``b``. 
 """
-function int(f, var, a, b)
-	integrate(f(x), (var, a, b))
+function int(c::Real, var::Sym{PyObject}, a, b)
+	c*(b-a)
 end
 
+"""
+	is_constant_function(f; a = -100, b = 100, n = 1_000_000)
+
+Checks if a function is constant by testing it at up to ``n=1,000,000`` values chosen uniformly between ``a`` and ``b``.
+"""
+function is_constant_function(f; a = -100, b = 100, n = 1_000_000)
+	k = f(a)
+	test_vals = rand(Uniform(a, b), n)
+	is_const = true
+	for i in 1:1_000_000
+		# println(i)
+		if k ≠ f(test_vals[i])
+			is_const = false
+			break
+		end
+	end	
+	is_const
+end
+
+"""
+    int(f, var, a, b)
+
+Find the definite integral of function ``f`` from ``a`` to ``b`` wrt to the variable var. 
+"""
+function int(f::T, var, a, b) where {T <: Union{Function, Sym}}
+	if is_constant_function(f; a, b)
+		int(f(a), var, a , b)
+	else
+		integrate(f(x), (var, a, b))
+	end
+end
+
+
+
+"""
+	golden_section_extrema(f, a, b; tol = 0.000000001)
+
+Finds the minimum and maximum of the function ``f`` in the interval ``[a,b]`` using tolerance tol.\n
+It uses the Golden-section search algorithm (https://en.wikipedia.org/wiki/Golden-section_search) to find the candidates in the interior
+and compares these to the values at the end points.
+"""
+function golden_section_extrema(f, a, b; tol = 0.000000001)
+	old = (a,b)
+	ya, yb = f.([a,b])
+	while b-a > tol
+		c = b-(b-a)/φ
+		d = a+(b-a)/φ
+		if f(c) < f(d)
+			b=d
+		else
+			a=c
+		end
+	end
+	gs_min = (b+a)/2
+
+	a,b = old
+	while b-a > tol
+		c = b-(b-a)/φ
+		d = a+(b-a)/φ
+		if f(c) > f(d)
+			b=d
+		else
+			a=c
+		end
+	end
+	gs_max = (b+a)/2
+
+	pts = sort([(old[1],ya), (gs_min,f(gs_min)), (gs_max,f(gs_max)), (old[2],yb)])
+	# println(pts)
+	xmin, ymin = pts[1]
+	xmax, ymax = pts[1]
+	for i in 2:4
+		xt, yt = pts[i]
+		if yt < ymin
+			xmin = xt
+			ymin = yt
+		end
+		if yt > ymax
+			xmax = xt
+			ymax = yt
+		end
+	end
+	xmin, xmax
+end
+
+"""
+	Riemann_sum(f, left, right, n; rule = :right)
+
+Finds the Rieman sum for the function ``f``.
+The inputs are:\n
+f: is a function,\n
+left: is the left endpoint,\n
+right: is the right endpoint,\n
+n: is the number of subintervals,\n
+rule: determines where the function f is evaluated in the subinterval.\n 
+-Options are 
+- a number in [0,1].\n
+- :left, :center, :right.\n 
+- :Darboux_lower, Darboux_upper\n 
+-Defaults to :right.\n 
+tol: If rule is Darboux this sets tolerance for finding extrema (uses the golden_section_extrema function)
+"""
+function Riemann_sum(f, left, right, n; rule = :right, tol = 0.000000001)
+	# Check for undefined points and skip by ± eps around them... I think
+	Δx = (right - left)/n
+	xs = OffsetArray(left:Δx:right, 0:n)
+	sum = 0
+	if typeof(rule) <: Number
+		if rule ≈ 1
+			for i in 1:n
+				sum += f(xs[i])*Δx		
+			end
+		elseif rule ≈ 0
+			for i in 0:n-1
+				sum += f(xs[i])*Δx		
+			end
+		elseif 0 < rule < 1
+			for i in 0:n-1
+				sum += f((xs[i+1]-xs[i])*rule + xs[i])*Δx		
+			end
+		else
+			println("The rule = $(rule) must be in the interval [0,1].")
+			sum = missing
+		end
+	else
+		if rule == :right
+			for i in 1:n
+				sum += f(xs[i])*Δx		
+			end
+		elseif rule == :left
+			for i in 0:n-1
+				sum += f(xs[i])*Δx		
+			end
+		
+		elseif rule == :center
+			for i in 0:n-1
+				sum += f(mean([xs[i],xs[i+1]]))*Δx		
+			end
+		elseif rule == :Darboux_lower
+			println(crayon"#FF0000", "Warning: this rule has not been tested yet.")
+			for i in 0:n-1
+				x, _ = golden_section_extrema(f, xs[i], xs[i+1]; tol)
+				sum += f(x)*Δx		
+			end
+		elseif rule == :Darboux_upper
+			println(crayon"#FF0000", "Warning: this rule has not been tested yet.")
+			for i in 0:n-1
+				_, x = golden_section_extrema(f, xs[i], xs[i+1]; tol)
+				sum += f(x)*Δx		
+			end
+		else
+			println("The rule $(rule) has not been implimented yet.")
+			sum = missing
+		end
+	end
+	sum
+end
+
+
+
+
+
+###############################################################################################################################
 function distance(p1::Tuple{Real, Real}, p2::Tuple{Real, Real})
 	sqrt((p2[2] - p1[2])^2 + (p2[1] - p1[1])^2)
 end
+
+
+
+
+###############################################################################################################################
 
 # function function_derivative_plot(f, xrange, xval; label = "", domain = "(-oo, oo)", horiz_ticks = missing, vert_ticks = missing, yrange = missing, xsteps = .01, size = (1000, 500), imageFormat = :svg, tickfontsize = 20, marksize = 8)
 # 	values = xrange[1]:xsteps:xrange[2]
