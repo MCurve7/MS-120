@@ -378,11 +378,19 @@ function criticalpoints(f)
 	# crpt_den = solve(simplify(1/f(x)))
 
 	crpt_num = solve(f, check=false)
+	# Simplifies each solution so it can be checked to see if it is real or non-real
+	for (i, z) in enumerate(crpt_num)
+		crpt_num[i] = real(z) + imag(z)
+	end
 	# println("crpt_num: $crpt_num")
 	
 	# crpt_den = solve(simplify(1/f), check=false) #without simplify results in failure
 	crpt_den = solve(1/f, check=false) 
 	filter!(e->e!="zoo", crpt_den)
+	# Simplifies each solution so it can be checked to see if it is real or non-real
+	for (i, z) in enumerate(crpt_den)
+		crpt_den[i] = real(z) + imag(z)
+	end
 	# println("crpt_den: $crpt_den")
 	
 	# println("crpt_num = $crpt_num; crpt_den: $crpt_den")
@@ -769,6 +777,11 @@ xrange: sets the limits of the x-axis if given as a pair otherwise automatically
 function signchart(a::T; label="", domain = "(-oo, oo)", horiz_jog = 0.2, size=(1000, 500), dotverticaljog = 0, marksize = 8, tickfontsize = 20, imageFormat = :svg, xrange = missing) where {T <: Real}
     #If there are no crpts just plot the sign of the function at 0
     # if a = 0 plot an empty string
+
+	#FIX don't plot labels outside of the domain
+	## Ex f(x) = x^3 - 2x^2 - 4x + 7; signchart(f(x); domain = "[-1,3]")
+
+	println("f is constant")
 	if ismissing(xrange)
 		interval = convert_to_interval(domain)
 		if interval.left == -∞ && interval.right == ∞ || interval.left == -oo && interval.right == oo
@@ -826,9 +839,11 @@ function signchart(f; label="", domain = "(-∞, ∞)", horiz_jog = 0.2, size=(1
 		p = signchart(a; label=label, domain = domain, horiz_jog = horiz_jog, size=size, dotverticaljog = dotverticaljog, marksize = marksize, tickfontsize = tickfontsize, imageFormat = imageFormat, xrange = xrange)
 	else
 		crpt_num, crpt_den = criticalpoints(f) #get the critical pts
+		println("crpt_num, crpt_den = $crpt_num, $crpt_den")
 		crpt = sort(vcat(crpt_num, crpt_den)) #put them into a list and sort
 		crpt = [real(z) for z in N.(crpt)] # Get rid of complex (looking) solutions
 		crpt = convert.(Float64, crpt) #convert to floats
+		println("critical points = $crpt")
 
 		#If there are no crpts just plot the sign of the function at 0
 		if length(crpt) == 0
