@@ -46,6 +46,10 @@ begin
 end
 
 # Test ###################################################
+f′ = diff(f(x))
+f′(3)
+
+# Test ###################################################
 # Raising values to the rational number exponents returns real values... 
 (8)^(1//3)
 (8)^(2//3)
@@ -843,3 +847,28 @@ N(temp, 60)
 
 
 #############################################################################################################################
+# Probability
+factorial(4)
+
+
+
+function binom(x; n=5, p=0.5)
+	q = 1-p
+	binomial(n, x)*p^x*q^(n-x)
+end
+
+binom(0; n=2, p=0.5)
+binom(1; n=2, p=0.5)
+
+binom(0; n=3, p=1/3)
+binom(1; n=3, p=1/3)
+binom(2; n=3, p=1/3)
+binom(3; n=3, p=1/3)
+
+binom(0; n=5, p=0.75)
+binom(1; n=5, p=0.75)
+binom(2; n=5, p=0.75)
+binom(3; n=5, p=0.75)
+binom(4; n=5, p=0.75)
+binom(5; n=5, p=0.75)
+
