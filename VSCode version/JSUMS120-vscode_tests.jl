@@ -846,7 +846,7 @@ N(temp, 60)
 
 
 
-#############################################################################################################################
+##########################################################################################################
 # Probability
 factorial(4)
 
@@ -872,3 +872,40 @@ binom(3; n=5, p=0.75)
 binom(4; n=5, p=0.75)
 binom(5; n=5, p=0.75)
 
+
+# histograms... so far not happy with available functions for one reason or another
+## Need to section off different packages
+data = rand(Binomial(4, .5), 1_000_000)
+df = DataFrame(x = data)
+
+# using PlotlyJS
+
+# PlotlyJS.plot(df, x=:x, kind="histogram")
+
+# plotly()
+histogram(data, bins = 0:4, normalize = :pdf, color = :red)
+histogram(data, bins = 0:4)
+# histogram(df.x)
+# using TidierPlots
+
+# TidierPlots._makie_expected_type["bins"] = Vector{Float64}
+
+# b = 0:4
+
+# function gghistogram(df, bins)
+# 	bins_float = collect(bins[1]-0.5:1:bins[end]+0.5)
+# 	println(bins_float)
+
+	
+
+# 	p = ggplot(df, @es(x = x)) +
+# 		geom_histogram(normalization=:probability, bins=bins_float, stroke=1.5, fill="red")
+# 		# geom_histogram(normalization=:probability, bins=[-0.5, 0.5, 1.5, 2.5, 3.5, 4.5], stroke=1.5, fill="red")
+# 	p
+# end
+
+# p = gghistogram(df, b)
+# p
+
+# ggplot(df, @es(x = x)) +
+# 	geom_histogram(normalization=:probability, bins=[-0.5, 0.5, 1.5, 2.5, 3.5, 4.5], stroke=1.5, fill="red")
