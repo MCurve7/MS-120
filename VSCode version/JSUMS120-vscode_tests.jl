@@ -1,13 +1,19 @@
+# vvv USE this for development, but comment it out vvv
 begin
 	using Revise
-	using BenchmarkTools
-	# using LaTeXStrings
-	# import Term: tprintln
-	# using Term.TermMarkdown
-	# using Markdown
+# 	using BenchmarkTools
+
+# 	# using LaTeXStrings
+# 	# import Term: tprintln
+# 	# using Term.TermMarkdown
+# 	# using Markdown
 	includet("JSUMS120-vscode.jl")
 end
+# ^^^^^^^^^^
 
+# vvv AND use this for just testing vvv
+# include("JSUMS120-vscode.jl")
+# ^^^^^^^^^^
 
 begin
 	# x = Sym("x")
@@ -79,6 +85,10 @@ f′(3)
 # I can't remember what necessitated this.
 
 # Test ###################################################
+# limittable_onesided(f, 3; dir="+")
+# limittable_onesided(f, 3; dir="-")
+
+
 limittable(f, 3, rows = 10)
 limittable(f(x), 3, rows = 10)
 limittable(f, 3, rows = 10, dir="+")
@@ -105,6 +115,14 @@ limittable(e, -oo, rows = 10)
 limittable(a, oo, rows = 10)
 limittable(a, -oo, rows = 10)
 
+# Test ###################################################
+limittable_html(f, 3, rows = 10)
+limittable_html(f, 3, rows = 10, dir="+")
+limittable_html(f, 3, rows = 10, dir="-")
+
+limittable_html(f, oo, rows = 10)
+limittable_html(f(x), oo, rows = 10)
+limittable_html(f, -oo, rows = 10)
 # Test ###################################################
 lim(f, x, 3)
 lim(f, x, oo)

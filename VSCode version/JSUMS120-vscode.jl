@@ -1,3 +1,5 @@
+# PrettyTables, SpecialFunctions, Format, Statistics, DataFrames, Plots, Printf, SymPy, PyCall, Colors, OffsetArrays, Distributions, StatsBase
+
 using PrettyTables
 using SpecialFunctions
 using Format
@@ -21,9 +23,21 @@ import Base: ^
 φ = Base.MathConstants.golden
 ###############################################################################################################################
 
+# begin
+# 	x = Sym("x")
+# 	# y = Sym("y")
+# 	h = Sym("h")
+# 	C = Sym("C")
+# 	# x = symbols('x')
+# 	# h = symbols("h")
+# 	# C = symbols("C")
+# 	∞ = oo
+# end
+
+# I think I need this vvv and not this ^^^ check 01/126/2026
 begin
-	x = Sym("x")
-	# y = Sym("y")
+	# x = Sym("x")
+	x = symbols("x", real = true)
 	h = Sym("h")
 	C = Sym("C")
 	# x = symbols('x')
@@ -74,7 +88,7 @@ end
 """
 	diff(f::Function)
 
-Extends SymPy's diff function to accept type Function in addtition to type Sym
+Extends SymPy's diff function to accept type Function in addition to type Sym
 """
 function diff(f::Function)
 	diff(f(x))
@@ -121,6 +135,18 @@ end
 
 
 ###############################################################################################################################
+# function limittable_onesided(f, a; dir::String,  rows::Int=5)
+# 	if dir == "+"
+# 		op = +
+# 	else
+# 		op = -
+# 	end
+# 	X = a .+ [10.0^(-i) for i in 1:rows-2] # broadcast: a + each elt in array
+# 	X = vcat([a + 1, a + 0.5], X) # add rows at the top of X
+# 	Y = [N(f(z)) for z in X] # make array of outputs f(X)
+# 	(X, Y)
+# end
+
 """
     limittable(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red])
 
@@ -145,14 +171,14 @@ function limittable(f, a; rows::Int=5, dir::String="", format="%10.8f", colors =
         X = a .+ [10.0^(-i) for i in 1:rows-2] # broadcast: a + each elt in array
         X = vcat([a + 1, a + 0.5], X) # add rows at the top of X
         Y = [N(f(z)) for z in X] # make array of outputs f(X)
-		hl_right = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_right)
-		pretty_table(hcat(X, Y); header = ["x → $(a)⁺", "y"], formatters = ft_printf(format), highlighters = (hl_right))	
+		hl_right = TextHighlighter((data, i, j) -> (j == 2) , crayon_color_right)
+		pretty_table(hcat(X, Y); column_labels = ["x → $(a)⁺", "y"], formatters = [fmt__printf(format)], highlighters = [hl_right])
     elseif dir == "-"
         X = a .- [10.0^(-i) for i in 1:rows-2]
         X = vcat([a - 1, a - 0.5], X)
         Y = [N(f(z)) for z in X]
-		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
-		pretty_table(hcat(X, Y); header = ["x → $(a)⁻", "y"], formatters = ft_printf(format), highlighters = (hl_left))
+		hl_left = TextHighlighter((data, i, j) -> (j == 2) , crayon_color_left)
+		pretty_table(hcat(X, Y); column_labels = ["x → $(a)⁻", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left])
     else # ?Make seperate functions for left/right limit and hcat them for 2-sided limit below?
         Xr = a .+ [10.0^(-i) for i in 1:rows-2]
         Xr = vcat([a + 1, a + 0.5], Xr)
@@ -161,9 +187,11 @@ function limittable(f, a; rows::Int=5, dir::String="", format="%10.8f", colors =
         Xl = vcat([a - 1, a - 0.5], Xl)
         Yl = [N(f(z)) for z in Xl]
         # Yl = [N(f(Complex(z))) for z in Xl]
-		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
-		hl_right = Highlighter(f =(data, i, j) -> (j == 4) , crayon = crayon_color_right)
-		pretty_table(hcat(Xl, Yl, Xr, Yr), header = ["x → $(a)⁻", "y", "x → $(a)⁺", "y"], formatters = ft_printf(format), highlighters = (hl_left, hl_right))
+		# hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
+		hl_left = TextHighlighter((data, i, j) -> (j == 2) , crayon_color_left)
+		# hl_right = ighlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
+		hl_right = TextHighlighter((data, i, j) -> (j == 4) , crayon_color_right)
+		pretty_table(hcat(Xl, Yl, Xr, Yr), column_labels  = ["x → $(a)⁻", "y", "x → $(a)⁺", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left, hl_right])
     end
 end
 
@@ -185,16 +213,102 @@ function limittable(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :r
         X = [10.0^(i+1) for i in 1:rows]
         Y = [N(f(z)) for z in X]
 		# hl_right = HtmlHighlighter((data, i, j) -> (j == 2) , HtmlDecoration(color = "red"))
-		hl_right = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_right)
+		hl_right = TextHighlighter((data, i, j) -> (j == 2) , crayon_color_right)
         # pretty_table(HTML, hcat(X, Y); header = ["x → ∞", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_right))
-		pretty_table(hcat(X, Y); header = ["x → ∞", "y"], formatters = ft_printf(format), highlighters = (hl_right))
+		pretty_table(hcat(X, Y); column_labels = ["x → ∞", "y"], formatters = [fmt__printf(format)], highlighters = [hl_right])
     elseif a == -oo
         X = [-1*10.0^(i+1) for i in 1:rows]
         Y = [N(f(z)) for z in X]
 		# hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , HtmlDecoration(color = "#0041C2"))
-		hl_left = Highlighter(f =(data, i, j) -> (j == 2) , crayon = crayon_color_left)
+		hl_left = TextHighlighter((data, i, j) -> (j == 2) , crayon_color_left)
         # pretty_table(HTML, hcat(X, Y); header = ["x → -∞", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_left))
-		pretty_table(hcat(X, Y); header = ["x → -∞", "y"], formatters = ft_printf(format), highlighters = (hl_left))
+		pretty_table(hcat(X, Y); column_labels = ["x → -∞", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left])
+    end
+
+end
+
+
+
+"""
+    limittable_html(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red])
+
+a: a finite number\n
+rows: number of rows to compute (default is 5 rows)\n
+dir: a string indicating which side to take the limit from\n
+format: a string that specifies c-style printf format for numbers (default is %10.8f)\n
+colors: a vector of symbols or strings that control the color of the left and right hand limits
+
+|dir|meaning|
+|---|-------|
+|""|approach from both sides (default)|
+|"-"|approach from the left|
+|"+"|approach from the right|
+
+Color options can be found here: https://juliagraphics.github.io/Colors.jl/stable/namedcolors/
+"""
+function limittable_html(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red]) # for finite x->a
+    if dir == "+"
+        X = a .+ [10.0^(-i) for i in 1:rows-2] # broadcast: a + each elt in array
+        X = vcat([a + 1, a + 0.5], X) # add rows at the top of X
+        Y = [N(f(z)) for z in X] # make array of outputs f(X)
+		hl_right = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[2])])
+		open("output.html", "w") do io
+			pretty_table(io, hcat(X, Y); backend = :html, column_labels = ["x → $(a)⁺", "y"], formatters = [fmt__printf(format)], highlighters = [hl_right], stand_alone=true)
+		end
+    elseif dir == "-"
+        X = a .- [10.0^(-i) for i in 1:rows-2]
+        X = vcat([a - 1, a - 0.5], X)
+        Y = [N(f(z)) for z in X]
+		hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[1])])
+		open("output.html", "w") do io
+			pretty_table(io, hcat(X, Y); backend = :html, column_labels = ["x → $(a)⁻", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left], stand_alone=true)
+		end
+    else # ?Make seperate functions for left/right limit and hcat them for 2-sided limit below?
+        Xr = a .+ [10.0^(-i) for i in 1:rows-2]
+        Xr = vcat([a + 1, a + 0.5], Xr)
+        Yr = [N(f(z)) for z in Xr]
+        Xl = a .- [10.0^(-i) for i in 1:rows-2]
+        Xl = vcat([a - 1, a - 0.5], Xl)
+        Yl = [N(f(z)) for z in Xl]
+        hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[1])])
+		hl_right = HtmlHighlighter((data, i, j) -> (j == 4) , ["color" => string(colors[2])])
+		open("output.html", "w") do io
+			pretty_table(io, hcat(Xl, Yl, Xr, Yr); backend = :html, column_labels  = ["x → $(a)⁻", "y", "x → $(a)⁺", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left, hl_right], stand_alone=true)
+		end
+    end
+end
+
+"""
+    limittable_html(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red])
+
+a: is either oo (meaning ∞) or -oo (meaning -∞)\n
+rows: number of rows to compute (default is 5 rows)\n
+format: a string that specifies c-style printf format for numbers (default is %10.2f)\n
+colors: a vector of symbols or strings that control the color of the left and right hand limits
+
+Color options can be found here: https://juliagraphics.github.io/Colors.jl/stable/namedcolors/
+"""
+function limittable_html(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red]) # for infinite x->oo/-oo
+	# hl_head = HtmlHighlighter((data, i, j) -> (i == 1) , HtmlDecoration(font_weight = "bold"))
+	crayon_color_right = Crayon(foreground = Colors.color_names[string(colors[2])], bold = true)
+	crayon_color_left = Crayon(foreground = Colors.color_names[string(colors[1])], bold = true)
+    if a == oo
+        X = [10.0^(i+1) for i in 1:rows]
+        Y = [N(f(z)) for z in X]
+		# hl_right = HtmlHighlighter((data, i, j) -> (j == 2) , HtmlDecoration(color = "red"))
+		hl_right = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[2])])
+        # pretty_table(HTML, hcat(X, Y); header = ["x → ∞", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_right))
+		open("output.html", "w") do io
+			pretty_table(io, hcat(X, Y); backend = :html, column_labels = ["x → ∞", "y"], formatters = [fmt__printf(format)], highlighters = [hl_right], stand_alone=true)
+		end
+    elseif a == -oo
+        X = [-1*10.0^(i+1) for i in 1:rows]
+        Y = [N(f(z)) for z in X]
+		# hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , HtmlDecoration(color = "#0041C2"))
+		hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[1])])
+		open("output.html", "w") do io
+			pretty_table(io, hcat(X, Y); backend = :html, column_labels = ["x → -∞", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left], stand_alone=true)
+		end
     end
 
 end
