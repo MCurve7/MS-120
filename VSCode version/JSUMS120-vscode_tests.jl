@@ -116,7 +116,7 @@ limittable(a, oo, rows = 10)
 limittable(a, -oo, rows = 10)
 
 # Test ###################################################
-limittable_html(f, 3, rows = 10)
+limittable_html(f, 3, rows = 10, filename = "test1")
 limittable_html(f, 3, rows = 10, dir="+")
 limittable_html(f, 3, rows = 10, dir="-")
 

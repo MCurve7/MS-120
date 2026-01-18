@@ -35,7 +35,7 @@ import Base: ^
 # end
 
 # I think I need this vvv and not this ^^^ check 01/126/2026
-begin
+# begin
 	# x = Sym("x")
 	x = symbols("x", real = true)
 	h = Sym("h")
@@ -44,7 +44,7 @@ begin
 	# h = symbols("h")
 	# C = symbols("C")
 	∞ = oo
-end
+# end
 
 begin
 	#summary code
@@ -88,7 +88,7 @@ end
 """
 	diff(f::Function)
 
-Extends SymPy's diff function to accept type Function in addition to type Sym
+Extends SymPy's diff function to accept arguments of type Function in addition to type Sym
 """
 function diff(f::Function)
 	diff(f(x))
@@ -150,11 +150,13 @@ end
 """
     limittable(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red])
 
+Construct a limit table as the variable approaches a finite value and output to the terminal.
+
 a: a finite number\n
 rows: number of rows to compute (default is 5 rows)\n
 dir: a string indicating which side to take the limit from\n
 format: a string that specifies c-style printf format for numbers (default is %10.8f)\n
-colors: a vector of symbols or strings that control the color of the left and right hand limits
+colors: a vector of symbols or strings that control the color of the left (first element) and right (second element) hand limits
 
 |dir|meaning|
 |---|-------|
@@ -163,6 +165,38 @@ colors: a vector of symbols or strings that control the color of the left and ri
 |"+"|approach from the right|
 
 Color options can be found here: https://juliagraphics.github.io/Colors.jl/stable/namedcolors/
+
+# Examples
+```julia-repl
+julia> limittable(x^2, 2)
+┌────────────┬────────────┬────────────┬────────────┐
+│     x → 2⁻ │          y │     x → 2⁺ │          y │
+├────────────┼────────────┼────────────┼────────────┤
+│ 1.00000000 │ 1.00000000 │ 3.00000000 │ 9.00000000 │
+│ 1.50000000 │ 2.25000000 │ 2.50000000 │ 6.25000000 │
+│ 1.90000000 │ 3.61000000 │ 2.10000000 │ 4.41000000 │
+│ 1.99000000 │ 3.96010000 │ 2.01000000 │ 4.04010000 │
+│ 1.99900000 │ 3.99600100 │ 2.00100000 │ 4.00400100 │
+└────────────┴────────────┴────────────┴────────────┘
+julia> limittable(x^2, 2; rows = 3)
+┌────────────┬────────────┬────────────┬────────────┐
+│     x → 2⁻ │          y │     x → 2⁺ │          y │
+├────────────┼────────────┼────────────┼────────────┤
+│ 1.00000000 │ 1.00000000 │ 3.00000000 │ 9.00000000 │
+│ 1.50000000 │ 2.25000000 │ 2.50000000 │ 6.25000000 │
+│ 1.90000000 │ 3.61000000 │ 2.10000000 │ 4.41000000 │
+└────────────┴────────────┴────────────┴────────────┘
+julia> limittable(x^2, 2; dir = "+")
+┌────────────┬────────────┐
+│     x → 2⁺ │          y │
+├────────────┼────────────┤
+│ 3.00000000 │ 9.00000000 │
+│ 2.50000000 │ 6.25000000 │
+│ 2.10000000 │ 4.41000000 │
+│ 2.01000000 │ 4.04010000 │
+│ 2.00100000 │ 4.00400100 │
+└────────────┴────────────┘
+```
 """
 function limittable(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red]) # for finite x->a
 	crayon_color_right = Crayon(foreground = Colors.color_names[string(colors[2])], bold = true)
@@ -198,12 +232,38 @@ end
 """
     limittable(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red])
 
+Construct a limit table as the variable approaches -∞ or ∞ and output to the terminal.
+
 a: is either oo (meaning ∞) or -oo (meaning -∞)\n
 rows: number of rows to compute (default is 5 rows)\n
 format: a string that specifies c-style printf format for numbers (default is %10.2f)\n
-colors: a vector of symbols or strings that control the color of the left and right hand limits
+colors: a vector of symbols or strings that control the color of the left (first element) and right (second element) hand limits
 
 Color options can be found here: https://juliagraphics.github.io/Colors.jl/stable/namedcolors/
+
+# Examples
+```julia-repl
+julia> limittable(1/x, oo)
+┌────────────┬────────────┐
+│      x → ∞ │          y │
+├────────────┼────────────┤
+│     100.00 │       0.01 │
+│    1000.00 │       0.00 │
+│   10000.00 │       0.00 │
+│  100000.00 │       0.00 │
+│ 1000000.00 │       0.00 │
+└────────────┴────────────┘
+julia> limittable(1/x, oo; format = "%10.8f")
+┌──────────────────┬────────────┐
+│            x → ∞ │          y │
+├──────────────────┼────────────┤
+│     100.00000000 │ 0.01000000 │
+│    1000.00000000 │ 0.00100000 │
+│   10000.00000000 │ 0.00010000 │
+│  100000.00000000 │ 0.00001000 │
+│ 1000000.00000000 │ 0.00000100 │
+└──────────────────┴────────────┘
+```
 """
 function limittable(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red]) # for infinite x->oo/-oo
 	# hl_head = HtmlHighlighter((data, i, j) -> (i == 1) , HtmlDecoration(font_weight = "bold"))
@@ -230,13 +290,16 @@ end
 
 
 """
-    limittable_html(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red])
+    limittable_html(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red], filename = "output.html")
+
+Construct a limit table (like the `limittable` function) as the variable approaches a finite value and output to a file in HTML.
 
 a: a finite number\n
 rows: number of rows to compute (default is 5 rows)\n
 dir: a string indicating which side to take the limit from\n
 format: a string that specifies c-style printf format for numbers (default is %10.8f)\n
-colors: a vector of symbols or strings that control the color of the left and right hand limits
+colors: a vector of symbols or strings that control the color of the left (first element) and right (second element) hand limits\n
+filename: If it doesn't end in ".html" then ".html" will be appended
 
 |dir|meaning|
 |---|-------|
@@ -246,13 +309,16 @@ colors: a vector of symbols or strings that control the color of the left and ri
 
 Color options can be found here: https://juliagraphics.github.io/Colors.jl/stable/namedcolors/
 """
-function limittable_html(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red]) # for finite x->a
+function limittable_html(f, a; rows::Int=5, dir::String="", format="%10.8f", colors = [:blue, :red], filename::String = "output.html") # for finite x->a
+	if filename[end-4:end] ≠ ".html"
+		filename *= ".html"
+	end
     if dir == "+"
         X = a .+ [10.0^(-i) for i in 1:rows-2] # broadcast: a + each elt in array
         X = vcat([a + 1, a + 0.5], X) # add rows at the top of X
         Y = [N(f(z)) for z in X] # make array of outputs f(X)
 		hl_right = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[2])])
-		open("output.html", "w") do io
+		open(filename, "w") do io
 			pretty_table(io, hcat(X, Y); backend = :html, column_labels = ["x → $(a)⁺", "y"], formatters = [fmt__printf(format)], highlighters = [hl_right], stand_alone=true)
 		end
     elseif dir == "-"
@@ -260,7 +326,7 @@ function limittable_html(f, a; rows::Int=5, dir::String="", format="%10.8f", col
         X = vcat([a - 1, a - 0.5], X)
         Y = [N(f(z)) for z in X]
 		hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[1])])
-		open("output.html", "w") do io
+		open(filename, "w") do io
 			pretty_table(io, hcat(X, Y); backend = :html, column_labels = ["x → $(a)⁻", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left], stand_alone=true)
 		end
     else # ?Make seperate functions for left/right limit and hcat them for 2-sided limit below?
@@ -272,33 +338,36 @@ function limittable_html(f, a; rows::Int=5, dir::String="", format="%10.8f", col
         Yl = [N(f(z)) for z in Xl]
         hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[1])])
 		hl_right = HtmlHighlighter((data, i, j) -> (j == 4) , ["color" => string(colors[2])])
-		open("output.html", "w") do io
+		open(filename, "w") do io
 			pretty_table(io, hcat(Xl, Yl, Xr, Yr); backend = :html, column_labels  = ["x → $(a)⁻", "y", "x → $(a)⁺", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left, hl_right], stand_alone=true)
 		end
     end
 end
 
 """
-    limittable_html(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red])
+    limittable_html(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red], filename = "output.html")
+
+Construct a limit table (like the `limittable` function) as the variable approaches -∞ or ∞ and output to a file in HTML.
 
 a: is either oo (meaning ∞) or -oo (meaning -∞)\n
 rows: number of rows to compute (default is 5 rows)\n
 format: a string that specifies c-style printf format for numbers (default is %10.2f)\n
-colors: a vector of symbols or strings that control the color of the left and right hand limits
+colors: a vector of symbols or strings that control the color of the left (first element) and right (second element) hand limits\n
+filename: If it doesn't end in ".html" then ".html" will be appended
 
 Color options can be found here: https://juliagraphics.github.io/Colors.jl/stable/namedcolors/
 """
-function limittable_html(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red]) # for infinite x->oo/-oo
-	# hl_head = HtmlHighlighter((data, i, j) -> (i == 1) , HtmlDecoration(font_weight = "bold"))
-	crayon_color_right = Crayon(foreground = Colors.color_names[string(colors[2])], bold = true)
-	crayon_color_left = Crayon(foreground = Colors.color_names[string(colors[1])], bold = true)
+function limittable_html(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blue, :red], filename = "output.html") # for infinite x->oo/-oo
+	if filename[end-4:end] ≠ ".html"
+		filename *= ".html"
+	end
     if a == oo
         X = [10.0^(i+1) for i in 1:rows]
         Y = [N(f(z)) for z in X]
 		# hl_right = HtmlHighlighter((data, i, j) -> (j == 2) , HtmlDecoration(color = "red"))
 		hl_right = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[2])])
         # pretty_table(HTML, hcat(X, Y); header = ["x → ∞", "y"], formatters = ft_printf(format), highlighters = (hl_head, hl_right))
-		open("output.html", "w") do io
+		open(filename, "w") do io
 			pretty_table(io, hcat(X, Y); backend = :html, column_labels = ["x → ∞", "y"], formatters = [fmt__printf(format)], highlighters = [hl_right], stand_alone=true)
 		end
     elseif a == -oo
@@ -306,7 +375,7 @@ function limittable_html(f, a::Sym; rows::Int=5, format="%10.2f", colors = [:blu
         Y = [N(f(z)) for z in X]
 		# hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , HtmlDecoration(color = "#0041C2"))
 		hl_left = HtmlHighlighter((data, i, j) -> (j == 2) , ["color" => string(colors[1])])
-		open("output.html", "w") do io
+		open(filename, "w") do io
 			pretty_table(io, hcat(X, Y); backend = :html, column_labels = ["x → -∞", "y"], formatters = [fmt__printf(format)], highlighters = [hl_left], stand_alone=true)
 		end
     end
